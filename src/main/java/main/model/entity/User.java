@@ -2,10 +2,10 @@ package main.model.entity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Users")
+@Table(name = "users")
 public class User {
     /**
      * Класс Пользователи
@@ -26,13 +26,12 @@ public class User {
     private int id;
 
     @NotNull
-    @Column(name = "is_moderator")
-    private byte isModerator;
+    @Column(name = "is_moderator", columnDefinition = "TINYINT")
+    private int isModerator;
 
     @NotNull
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "reg_time")
-    private Date regTime;
+    private LocalDateTime regTime;
 
     @NotNull
     private String name, email, password;
@@ -50,19 +49,19 @@ public class User {
         this.id = id;
     }
 
-    public byte getIsModerator() {
+    public int getIsModerator() {
         return isModerator;
     }
 
-    public void setIsModerator(byte isModerator) {
+    public void setIsModerator(int isModerator) {
         this.isModerator = isModerator;
     }
 
-    public Date getRegTime() {
+    public LocalDateTime getRegTime() {
         return regTime;
     }
 
-    public void setRegTime(Date regTime) {
+    public void setRegTime(LocalDateTime regTime) {
         this.regTime = regTime;
     }
 

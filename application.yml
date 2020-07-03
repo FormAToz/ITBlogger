@@ -1,11 +1,16 @@
 spring:
+  flyway:
+    enabled: false
   jpa:
+    generate-ddl: false
+    show-sql: true
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
 
   datasource:
     url: jdbc:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC
     username: root
     password: testformat
+
 
 author: A.Danilov

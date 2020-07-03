@@ -4,7 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "Global_settings")
+@Table(name = "global_settings")
 public class GlobalSettings {
     /**
      * Класс глобальных настроек движка

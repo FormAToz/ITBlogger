@@ -2,10 +2,10 @@ package main.model.entity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Post_comments")
+@Table(name = "post_comments")
 public class PostComment {
     /**
      * Класс комментариев к постам
@@ -23,20 +23,20 @@ public class PostComment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "parent_id")
-    private int parentId;
+    @OneToOne
+    @JoinColumn(name="parent_id", updatable = false)
+    private PostComment parentId;
+
+    @OneToOne(optional = false)
+    @JoinColumn(name="post_id", updatable = false)
+    private Post postId;
+
+    @OneToOne(optional = false)
+    @JoinColumn(name="user_id", updatable = false)
+    private User userId;
 
     @NotNull
-    @Column(name = "post_id")
-    private int postId;
-
-    @NotNull
-    @Column(name = "user_id")
-    private int userId;
-
-    @NotNull
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date time;
+    private LocalDateTime time;
 
     @NotNull
     @Column(columnDefinition = "TEXT")
@@ -50,35 +50,35 @@ public class PostComment {
         this.id = id;
     }
 
-    public int getParentId() {
+    public PostComment getParentId() {
         return parentId;
     }
 
-    public void setParentId(int parentId) {
+    public void setParentId(PostComment parentId) {
         this.parentId = parentId;
     }
 
-    public int getPostId() {
+    public Post getPostId() {
         return postId;
     }
 
-    public void setPostId(int postId) {
+    public void setPostId(Post postId) {
         this.postId = postId;
     }
 
-    public int getUserId() {
+    public User getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(User userId) {
         this.userId = userId;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 

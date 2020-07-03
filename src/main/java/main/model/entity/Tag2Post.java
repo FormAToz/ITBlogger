@@ -4,7 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "Tag2post")
+@Table(name = "tag2post")
 public class Tag2Post {
     /**
      * Класс связей тегов с постами
@@ -19,13 +19,13 @@ public class Tag2Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @NotNull
-    @Column(name = "post_id")
-    private int postId;
+    @OneToOne(optional = false)
+    @JoinColumn(name="post_id", updatable = false)
+    private Post postId;
 
-    @NotNull
-    @Column(name = "tag_id")
-    private int tagId;
+    @OneToOne(optional = false)
+    @JoinColumn(name="tag_id", updatable = false)
+    private Tag tagId;
 
     public int getId() {
         return id;
@@ -35,19 +35,19 @@ public class Tag2Post {
         this.id = id;
     }
 
-    public int getPostId() {
+    public Post getPostId() {
         return postId;
     }
 
-    public void setPostId(int postId) {
+    public void setPostId(Post postId) {
         this.postId = postId;
     }
 
-    public int getTagId() {
+    public Tag getTagId() {
         return tagId;
     }
 
-    public void setTagId(int tagId) {
+    public void setTagId(Tag tagId) {
         this.tagId = tagId;
     }
 }

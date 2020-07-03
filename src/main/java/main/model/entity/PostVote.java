@@ -2,10 +2,10 @@ package main.model.entity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Post_votes")
+@Table(name = "post_votes")
 public class PostVote {
     /**
      *  Класс лайков и дизлайков постов
@@ -22,17 +22,16 @@ public class PostVote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @NotNull
-    @Column(name = "user_id")
-    private int userId;
+    @OneToOne(optional = false)
+    @JoinColumn(name="user_id", updatable = false)
+    private User userId;
+
+    @OneToOne(optional = false)
+    @JoinColumn(name="post_id", updatable = false)
+    private Post postId;
 
     @NotNull
-    @Column(name = "post_id")
-    private int postId;
-
-    @NotNull
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date time;
+    private LocalDateTime time;
 
     @NotNull
     private byte value;
@@ -45,27 +44,27 @@ public class PostVote {
         this.id = id;
     }
 
-    public int getUserId() {
+    public User getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(User userId) {
         this.userId = userId;
     }
 
-    public int getPostId() {
+    public Post getPostId() {
         return postId;
     }
 
-    public void setPostId(int postId) {
+    public void setPostId(Post postId) {
         this.postId = postId;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 

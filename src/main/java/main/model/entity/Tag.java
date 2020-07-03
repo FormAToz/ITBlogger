@@ -4,7 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "Tags")
+@Table(name = "tags")
 public class Tag {
     /**
      *  Класс тэгов

@@ -1,17 +1,20 @@
 package main.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "Posts")
+@Table(name = "posts")
 public class Post {
     /**
      * Класс посты
      *
      * id                 id поста
-     * isActive           скрыта или активна публикация: 0 или 1
+     * active             скрыта или активна публикация: 0 или 1
      * moderationStatus   статус модерации, по умолчанию значение "NEW".
      * moderatorId        id пользователя-модератора, принявшего решение, или NULL
      * userId             автор поста
@@ -26,24 +29,25 @@ public class Post {
     private int id;
 
     @NotNull
-    @Column(name = "is_active")
-    private byte isActive;
+    @Column(name = "is_active", columnDefinition = "TINYINT")
+    private int active;
 
     @NotNull
-    @Column(name = "moderation_status", length = 32, columnDefinition = "VARCHAR(32) default 'NEW'")
+    @Column(columnDefinition = "VARCHAR(32) default 'NEW'")
     @Enumerated(EnumType.STRING)
     private ModerationStatus moderationStatus;
 
-    @Column(name = "moderator_id")
-    private int moderatorId;
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "moderator_id")
+    private User moderatorId;
+
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", updatable = false)
+    private User userId;
 
     @NotNull
-    @Column(name = "user_id")
-    private int userId;
-
-    @NotNull
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date time;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+    private LocalDateTime time;
 
     @NotNull
     private String title;
@@ -56,6 +60,9 @@ public class Post {
     @Column(name = "view_count")
     private int viewCount;
 
+    @Transient
+    private List<String> tags;
+
     public int getId() {
         return id;
     }
@@ -64,12 +71,12 @@ public class Post {
         this.id = id;
     }
 
-    public byte getIsActive() {
-        return isActive;
+    public int getActive() {
+        return active;
     }
 
-    public void setIsActive(byte isActive) {
-        this.isActive = isActive;
+    public void setActive(int active) {
+        this.active = active;
     }
 
     public ModerationStatus getModerationStatus() {
@@ -80,27 +87,27 @@ public class Post {
         this.moderationStatus = moderationStatus;
     }
 
-    public int getModeratorId() {
+    public User getModeratorId() {
         return moderatorId;
     }
 
-    public void setModeratorId(int moderatorId) {
+    public void setModeratorId(User moderatorId) {
         this.moderatorId = moderatorId;
     }
 
-    public int getUserId() {
+    public User getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(User userId) {
         this.userId = userId;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 
@@ -126,5 +133,22 @@ public class Post {
 
     public void setViewCount(int viewCount) {
         this.viewCount = viewCount;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public enum ModerationStatus {
+        /**
+         * Класс перечисления статуса модерации постов
+         * */
+        NEW,
+        ACCEPTED,
+        DECLINED
     }
 }
