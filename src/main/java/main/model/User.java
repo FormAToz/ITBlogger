@@ -1,8 +1,9 @@
-package main.model.entity;
+package main.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -40,6 +41,9 @@ public class User {
 
     @Column(columnDefinition = "TEXT")
     private String photo;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Post> posts;
 
     public int getId() {
         return id;
@@ -103,5 +107,13 @@ public class User {
 
     public void setPhoto(String photo) {
         this.photo = photo;
+    }
+
+    public List<Post> getPosts() {
+        return posts;
+    }
+
+    public void setPosts(List<Post> posts) {
+        this.posts = posts;
     }
 }

@@ -1,4 +1,4 @@
-package main.model.entity;
+package main.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

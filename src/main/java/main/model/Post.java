@@ -1,4 +1,4 @@
-package main.model.entity;
+package main.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -12,17 +12,17 @@ import java.util.List;
 public class Post {
     /**
      * Класс посты
-     *
+     * ===========
      * id                 id поста
      * active             скрыта или активна публикация: 0 или 1
      * moderationStatus   статус модерации, по умолчанию значение "NEW".
      * moderatorId        id пользователя-модератора, принявшего решение, или NULL
-     * userId             автор поста
+     * user             автор поста
      * time               дата и время публикации поста
      * title              заголовок поста
      * text               текст поста
      * viewCount          количество просмотров поста
-     * */
+     */
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,13 +37,12 @@ public class Post {
     @Enumerated(EnumType.STRING)
     private ModerationStatus moderationStatus;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "moderator_id")
-    private User moderatorId;
+    @Column(name = "moderator_id")
+    private Integer moderatorId;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", updatable = false)
-    private User userId;
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", updatable = false, nullable = false)
+    private User user;
 
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
@@ -60,8 +59,12 @@ public class Post {
     @Column(name = "view_count")
     private int viewCount;
 
-    @Transient
-    private List<String> tags;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "tag2post",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<Tag> tags;
 
     public int getId() {
         return id;
@@ -87,20 +90,20 @@ public class Post {
         this.moderationStatus = moderationStatus;
     }
 
-    public User getModeratorId() {
+    public Integer getModeratorId() {
         return moderatorId;
     }
 
-    public void setModeratorId(User moderatorId) {
+    public void setModeratorId(Integer moderatorId) {
         this.moderatorId = moderatorId;
     }
 
-    public User getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(User userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public LocalDateTime getTime() {
@@ -135,18 +138,18 @@ public class Post {
         this.viewCount = viewCount;
     }
 
-    public List<String> getTags() {
+    public List<Tag> getTags() {
         return tags;
     }
 
-    public void setTags(List<String> tags) {
+    public void setTags(List<Tag> tags) {
         this.tags = tags;
     }
 
     public enum ModerationStatus {
         /**
          * Класс перечисления статуса модерации постов
-         * */
+         */
         NEW,
         ACCEPTED,
         DECLINED

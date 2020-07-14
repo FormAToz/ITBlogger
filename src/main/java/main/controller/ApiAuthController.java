@@ -1,9 +1,12 @@
 package main.controller;
 
-import org.json.simple.JSONObject;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+        import main.api.response.UserFullResponse;
+        import main.api.response.UserResultResponse;
+        import org.springframework.http.HttpStatus;
+        import org.springframework.http.ResponseEntity;
+        import org.springframework.web.bind.annotation.GetMapping;
+        import org.springframework.web.bind.annotation.RequestMapping;
+        import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("api/auth")
@@ -13,18 +16,16 @@ public class ApiAuthController {
      * */
 
     @GetMapping("check")
-    public JSONObject check() {
-        JSONObject jObj = new JSONObject();
-        JSONObject jUser = new JSONObject();
-        jUser.put("id", 1);
-        jUser.put("name", "Андрей Данилов");
-        jUser.put("photo", "/avatars/ab/cd/ef/52461.jpg");
-        jUser.put("email", "7.danilov@gmail.com");
-        jUser.put("moderation", true);
-        jUser.put("moderationCount", 56);
-        jUser.put("settings", true);
-        jObj.put("result", true);
-        jObj.put("user", jUser);
-        return jObj;
+    public ResponseEntity<UserResultResponse> check() {
+        UserFullResponse user = new UserFullResponse();
+        user.setName("Андрей Данилов");
+        user.setId(1);
+        user.setEmail("7.danilov@gmail.com");
+        user.setModeration(true);
+        user.setModerationCount(0);
+        user.setSettings(true);
+
+        UserResultResponse userResultResponse = new UserResultResponse(true, user);
+        return new ResponseEntity<>(userResultResponse, HttpStatus.OK);
     }
 }

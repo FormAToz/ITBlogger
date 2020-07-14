@@ -1,6 +1,6 @@
-package main.model.repository;
+package main.repository;
 
-import main.model.entity.PostVote;
+import main.model.PostVote;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

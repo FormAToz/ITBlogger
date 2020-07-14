@@ -1,11 +1,12 @@
 package main.controller;
 
-import main.model.service.impl.InitService;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import main.api.response.InitResponse;
+import main.api.response.SettingsResponse;
+import main.api.response.TagListResponse;
+import main.service.TagService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,37 +16,45 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api")
 public class ApiGeneralController {
+    private final TagService tagService;
 
-    @Autowired
-    InitService initService;
+    public ApiGeneralController(TagService tagService) {
+        this.tagService = tagService;
+    }
 
+    /**
+     * Общие данные блога - GET /api/init/
+     * Метод возвращает общую информацию о блоге: название блога и подзаголовок для размещения в хэдере сайта,
+     * а также номер телефона, e-mail и информацию об авторских правах для размещения в футере.
+     */
     @GetMapping("init")
-    public JSONObject init() {
-        return initService.toJSON();
+    public ResponseEntity<InitResponse> init() {
+        InitResponse initResponse = new InitResponse(
+                "IT-Blogger",
+                "Рассказы разработчиков",
+                "+7 999 777-77-77",
+                "7.danilov@gmail.com",
+                "Андрей Данилов",
+                "2020");
+        return new ResponseEntity<>(initResponse, HttpStatus.OK);
     }
 
+    /**
+     * Получение настроек - GET /api/settings/
+     * Метод записывает глобальные настройки блога в таблицу global_settings,
+     * если запрашивающий пользователь авторизован и является модератором.
+     */
     @GetMapping("settings")
-    public JSONObject settings() {
-        JSONObject jObj = new JSONObject();
-        jObj.put("MULTIUSER_MODE", false);
-        jObj.put("POST_PREMODERATION", true);
-        jObj.put("STATISTICS_IS_PUBLIC", null);
-        return jObj;
+    public ResponseEntity<SettingsResponse> settings() {
+        SettingsResponse settings = new SettingsResponse(false, true, true);
+        return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
+    /**
+     * Получение списка тэгов - GET /api/tag/
+     */
     @GetMapping("tag")
-    public JSONObject tags() {
-        JSONObject jObj = new JSONObject();
-        JSONArray jArr = new JSONArray();
-        JSONObject jTag1 = new JSONObject();
-        JSONObject jTag2 = new JSONObject();
-        jTag1.put("name", "PHP");
-        jTag1.put("weight", 1);
-        jTag2.put("name", "Python");
-        jTag2.put("weight", 0.33);
-        jArr.add(jTag1);
-        jArr.add(jTag2);
-        jObj.put("tags", jArr);
-        return jObj;
+    public ResponseEntity<TagListResponse> tags() {
+        return new ResponseEntity<>(tagService.tags(), HttpStatus.OK);
     }
 }

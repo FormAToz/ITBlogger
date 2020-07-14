@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</Property>
+        <Property name="LOG_CONSOLE_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</Property>
+        <Property name="APP_LOG_ROOT">logs</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="${LOG_CONSOLE_PATTERN}" />
+        </Console>
+
+        <RollingFile name="appLog"
+                     fileName="${APP_LOG_ROOT}/appInfo.log"
+                     filePattern="${APP_LOG_ROOT}/appInfo-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${LOG_FILE_PATTERN}" />
+            <Filters>
+                <MarkerFilter marker="APP_INFO"/>
+            </Filters>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="19500KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="1" />
+        </RollingFile>
+
+    </Appenders>
+    <Loggers>
+
+        <Logger name="applogger" additivity="false">
+            <AppenderRef ref="appLog" level="info" />
+            <AppenderRef ref="Console" />
+        </Logger>
+
+        <Root level="info" additivity="false">
+            <AppenderRef ref="appLog" level="info" />
+            <AppenderRef ref="Console" />
+        </Root>
+    </Loggers>
+</Configuration>

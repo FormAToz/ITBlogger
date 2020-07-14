@@ -1,9 +1,8 @@
 package main.controller;
 
-import main.model.entity.Post;
-import main.model.service.impl.PostService;
-import org.json.simple.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import main.api.response.PostCountResponse;
+import main.model.Post;
+import main.service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,12 +12,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("api/post")
 public class ApiPostController {
-    @Autowired
-    PostService postService;
+    private final PostService postService;
+
+    public ApiPostController(PostService postService) {
+        this.postService = postService;
+    }
 
     // все посты для отображения
     @GetMapping
-    public JSONObject getPosts(int offset, int limit, String mode) {
+    public ResponseEntity<PostCountResponse> getPosts(int offset, int limit, String mode) {
         return postService.getPosts(offset, limit, mode);
     }
 
@@ -28,4 +30,9 @@ public class ApiPostController {
         return postService.addPost(post);
     }
 
+    // Поиск поста
+    @GetMapping("/search")
+    public ResponseEntity<PostCountResponse> searchPost(int offset, int limit, String query) {
+        return postService.searchPosts(offset, limit, query);
+    }
 }

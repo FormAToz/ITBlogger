@@ -1,4 +1,4 @@
-package main.model.entity;
+package main.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -19,13 +19,11 @@ public class Tag2Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name="post_id", updatable = false)
-    private Post postId;
+    @Column(name="post_id", updatable = false, nullable = false)
+    private int postId;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name="tag_id", updatable = false)
-    private Tag tagId;
+    @Column(name="tag_id", updatable = false, nullable = false)
+    private int tagId;
 
     public int getId() {
         return id;
@@ -35,19 +33,19 @@ public class Tag2Post {
         this.id = id;
     }
 
-    public Post getPostId() {
+    public int getPostId() {
         return postId;
     }
 
-    public void setPostId(Post postId) {
+    public void setPostId(int postId) {
         this.postId = postId;
     }
 
-    public Tag getTagId() {
+    public int getTagId() {
         return tagId;
     }
 
-    public void setTagId(Tag tagId) {
+    public void setTagId(int tagId) {
         this.tagId = tagId;
     }
 }
