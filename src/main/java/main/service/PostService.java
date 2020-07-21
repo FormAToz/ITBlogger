@@ -1,5 +1,6 @@
 package main.service;
 
+import main.Main;
 import main.api.response.PostCountResponse;
 import main.api.response.PostResponse;
 import main.api.response.ResultResponse;
@@ -8,11 +9,16 @@ import main.model.Post;
 import main.model.Tag;
 import main.model.User;
 import main.repository.PostRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -20,9 +26,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class PostService {
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
     private final int MIN_ANNOUNCE_TEXT_LENGTH = 40;
     private final int MIN_TITLE_LENGTH = 3;
     private final int MIN_TEXT_LENGTH = 50;
+    @Autowired
+    private HttpServletRequest servletRequest;
     @Autowired
     private PostRepository postRepository;
     @Autowired
@@ -66,6 +76,9 @@ public class PostService {
     // Добавление поста - POST /api/post
     public ResponseEntity<ResultResponse> addPost(Post post) {
         Map<String, String> errors = new HashMap<>();
+        ArrayList<Tag> tags = (ArrayList<Tag>) tagService.checkDuplicatesInRepo(post.getTags());
+        String sessionId = servletRequest.getSession().getId();
+        User user = userService.getUserFromSession(sessionId);
         // Проверка длины заголовка и текста
         if (post.getTitle().length() < MIN_TITLE_LENGTH) {
             errors.put("title", "Заголовок публикации менее " + MIN_TITLE_LENGTH + " символов");
@@ -73,10 +86,15 @@ public class PostService {
         if (post.getText().length() < MIN_TEXT_LENGTH) {
             errors.put("text", "Текст публикации менее " + MIN_TEXT_LENGTH + " символов");
         }
+        // Проверка пользователя
+        if (user == null) {
+            errors.put("user", "Пользователь не зарегистрирован!");
+        }else {
+            post.setUser(user);
+        }
         if (!errors.isEmpty()) {
             return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.BAD_REQUEST);
         }
-        ArrayList<Tag> tags = (ArrayList<Tag>) tagService.checkDuplicatesInRepo(post.getTags());
         post.setTags(tags);
         // Проверка времени публикации
         if (post.getTime().isBefore(LocalDateTime.now())) {
@@ -84,10 +102,10 @@ public class PostService {
         }
         post.setTime(post.getTime().plusHours(3));
         post.setModerationStatus(Post.ModerationStatus.NEW);
-        post.setUser(userService.getUserById(1));             // TODO изменить способ добавления юзера
         post.setViewCount(0);
         postRepository.save(post);
-        // TODO добавить логгер при добавлении поста
+        LOGGER.info(MARKER, "Пост добавлен. Id: {}, user Id, name: {}, {}, title: {}",
+                post.getId(), post.getUser().getId(),post.getUser().getName(), post.getTitle());
         return new ResponseEntity<>(new ResultResponse(true, null), HttpStatus.OK);
     }
 
