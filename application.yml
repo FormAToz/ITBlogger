@@ -3,7 +3,7 @@ spring:
     enabled: false
   jpa:
     generate-ddl: false
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: update
 

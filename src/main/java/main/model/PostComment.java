@@ -23,17 +23,15 @@ public class PostComment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @OneToOne
-    @JoinColumn(name="parent_id", updatable = false)
+    @ManyToOne(optional = false)
+    @JoinColumn(name="parent_id")
     private PostComment parentId;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name="post_id", updatable = false)
-    private Post postId;
+    @Column(name="post_id", updatable = false, nullable = false)
+    private int postId;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name="user_id", updatable = false)
-    private User userId;
+    @Column(name="user_id", updatable = false, nullable = false)
+    private int userId;
 
     @NotNull
     private LocalDateTime time;
@@ -58,19 +56,19 @@ public class PostComment {
         this.parentId = parentId;
     }
 
-    public Post getPostId() {
+    public int getPostId() {
         return postId;
     }
 
-    public void setPostId(Post postId) {
+    public void setPostId(int postId) {
         this.postId = postId;
     }
 
-    public User getUserId() {
+    public int getUserId() {
         return userId;
     }
 
-    public void setUserId(User userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
     }
 

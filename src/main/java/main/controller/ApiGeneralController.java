@@ -22,11 +22,7 @@ public class ApiGeneralController {
         this.tagService = tagService;
     }
 
-    /**
-     * Общие данные блога - GET /api/init/
-     * Метод возвращает общую информацию о блоге: название блога и подзаголовок для размещения в хэдере сайта,
-     * а также номер телефона, e-mail и информацию об авторских правах для размещения в футере.
-     */
+    // Общие данные блога
     @GetMapping("init")
     public ResponseEntity<InitResponse> init() {
         InitResponse initResponse = new InitResponse(
@@ -39,20 +35,14 @@ public class ApiGeneralController {
         return new ResponseEntity<>(initResponse, HttpStatus.OK);
     }
 
-    /**
-     * Получение настроек - GET /api/settings/
-     * Метод записывает глобальные настройки блога в таблицу global_settings,
-     * если запрашивающий пользователь авторизован и является модератором.
-     */
+    // Получение настроек
     @GetMapping("settings")
     public ResponseEntity<SettingsResponse> settings() {
         SettingsResponse settings = new SettingsResponse(false, true, true);
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }
 
-    /**
-     * Получение списка тэгов - GET /api/tag/
-     */
+    // Получение списка тэгов
     @GetMapping("tag")
     public ResponseEntity<TagListResponse> tags() {
         return new ResponseEntity<>(tagService.tags(), HttpStatus.OK);

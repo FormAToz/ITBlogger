@@ -1,6 +1,7 @@
 package dataBase;
 
 import main.model.User;
+import main.repository.Tag2PostRepository;
 import main.repository.UserRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,12 +10,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class DataBaseUnitTest {
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    Tag2PostRepository tag2PostRepository;
 
     @Test
     public void testCreateModerator() {
@@ -29,7 +33,8 @@ public class DataBaseUnitTest {
     }
 
     @Test
-    public void testCreatePosts() {
-        // TODO
+    public void testTagCountsList() {
+        List<?> tagCount = tag2PostRepository.allTagsCount();
+        tagCount.forEach(System.out::println);
     }
 }

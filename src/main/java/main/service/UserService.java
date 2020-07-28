@@ -1,6 +1,7 @@
 package main.service;
 
 import main.Main;
+import main.model.Post;
 import main.model.User;
 import main.repository.UserRepository;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +26,7 @@ public class UserService {
     // Создание тестового юзера
     public void createTestUser() {
         User u = new User();
-        u.setName("Андрей данилов");
+        u.setName("Андрей Данилов");
         u.setEmail("7.danilov@gmail.com");
         u.setRegTime(LocalDateTime.now().plusHours(3));
         u.setPhoto("a/b/c.jpeg");
@@ -55,5 +56,13 @@ public class UserService {
             return null;
         }
         return getUserById(userId);
+    }
+
+    public boolean isModerator(User user) {
+        return user.getIsModerator() == 1;
+    }
+
+    public boolean isAuthor(User user, Post post) {
+        return user.getId() == post.getUser().getId();
     }
 }

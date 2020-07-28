@@ -24,4 +24,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     // Поиск в заголовке и тексте в отфильтрованных постах
     @Query(value = FILTERED_POST_QUERY + " and p.title like %?1% or p.text like %?1%")
     List<Post> findPostsByQuery(@Param("query") String query);
+
+    @Query(value = FILTERED_POST_QUERY + " and p.id = :id")
+    Post getPostById(@Param("id")int id);
 }

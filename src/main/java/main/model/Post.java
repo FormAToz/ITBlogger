@@ -66,6 +66,9 @@ public class Post {
     )
     private List<Tag> tags;
 
+    @OneToMany(mappedBy = "id", fetch = FetchType.LAZY)
+    private List<PostComment> comments;
+
     public int getId() {
         return id;
     }
@@ -144,6 +147,14 @@ public class Post {
 
     public void setTags(List<Tag> tags) {
         this.tags = tags;
+    }
+
+    public List<PostComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<PostComment> comments) {
+        this.comments = comments;
     }
 
     public enum ModerationStatus {
