@@ -7,9 +7,6 @@ import main.service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Класс обрабатывает все запросы /api/post/*
- * */
 @RestController
 @RequestMapping("api/post")
 public class ApiPostController {
@@ -21,7 +18,7 @@ public class ApiPostController {
 
     // Все посты для отображения
     @GetMapping
-    public ResponseEntity<PostCountResponse> getPosts(int offset, int limit, String mode) {
+    public ResponseEntity<PostCountResponse> getAllPosts(int offset, int limit, String mode) {
         return postService.getPosts(offset, limit, mode);
     }
 
@@ -45,13 +42,13 @@ public class ApiPostController {
 
     // Список постов за указанную дату
     @GetMapping("/byDate")
-    public ResponseEntity<PostCountResponse> getPostsByDate(int offset, int limit, String date) {
+    public ResponseEntity<PostCountResponse> getAllPostsByDate(int offset, int limit, String date) {
         return postService.getPostsByDate(offset, limit, date);
     }
 
     // Список постов по тэгу
     @GetMapping("/byTag")
-    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tag) {
+    public ResponseEntity<PostCountResponse> getAllPostsByTag(int offset, int limit, String tag) {
         return postService.getPostsByTag(offset, limit, tag);
     }
 }

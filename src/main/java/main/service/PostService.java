@@ -1,7 +1,10 @@
 package main.service;
 
 import main.Main;
-import main.api.response.*;
+import main.api.response.PostCountResponse;
+import main.api.response.PostResponse;
+import main.api.response.ResultResponse;
+import main.api.response.UserIdNameResponse;
 import main.model.Post;
 import main.model.Tag;
 import main.model.User;
@@ -15,29 +18,30 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class PostService {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
-    private final int MIN_ANNOUNCE_TEXT_LENGTH = 40;
-    private final int MIN_TITLE_LENGTH = 3;
-    private final int MIN_TEXT_LENGTH = 50;
-    @Autowired
-    private HttpServletRequest servletRequest;
     @Autowired
     private PostRepository postRepository;
     @Autowired
     private UserService userService;
     @Autowired
     private TagService tagService;
+    @Autowired
+    private TextService textService;
+    @Autowired
+    private TimeService timeService;
 
-    // Создание тестовых постов
+    /**
+     * Создание тестовых постов
+     */
     private void createTestPosts() {
         for (int i = 0; i < 100; i++) {
             Post p = new Post();
@@ -63,7 +67,6 @@ public class PostService {
      *               early - сортировать по дате публикации, выводить сначала старые
      */
     public ResponseEntity<PostCountResponse> getPosts(int offset, int limit, String mode) {
-        // Получаем и сортируем все отфильтрованные посты
         List<Post> filteredPosts = sortFilteredPosts(postRepository.findAllFilteredPosts(), mode);
         PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
         return new ResponseEntity<>(postsCount, HttpStatus.OK);
@@ -73,32 +76,18 @@ public class PostService {
      * Добавление поста - POST /api/post
      */
     public ResponseEntity<ResultResponse> addPost(Post post) {
-        Map<String, String> errors = new HashMap<>();
-        ArrayList<Tag> tags = (ArrayList<Tag>) tagService.checkDuplicatesInRepo(post.getTags());
-        String sessionId = servletRequest.getSession().getId();
-        User user = userService.getUserFromSession(sessionId);
-        // Проверка длины заголовка и текста
-        if (post.getTitle().length() < MIN_TITLE_LENGTH) {
-            errors.put("title", "Заголовок публикации менее " + MIN_TITLE_LENGTH + " символов");
+        User user = userService.getUserFromSession();
+
+        if (textService.titleAndTextIsShort(post.getTitle(), post.getText())) {
+            return textService.checkTitleAndTextLength(post.getTitle(), post.getText());
         }
-        if (post.getText().length() < MIN_TEXT_LENGTH) {
-            errors.put("text", "Текст публикации менее " + MIN_TEXT_LENGTH + " символов");
-        }
-        // Проверка пользователя
         if (user == null) {
-            errors.put("user", "Пользователь не зарегистрирован!");
-        }else {
-            post.setUser(user);
+            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-        if (!errors.isEmpty()) {
-            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.BAD_REQUEST);
-        }
-        post.setTags(tags);
-        // Проверка времени публикации
-        if (post.getTime().isBefore(LocalDateTime.now())) {
-            post.setTime(LocalDateTime.now());
-        }
-        post.setTime(post.getTime().plusHours(3));
+        post.setUser(user);
+        post.setTags(tagService.checkDuplicatesInRepo(post.getTags()));
+        post.setTime(timeService.getExpectedTime(post.getTime()));
         post.setModerationStatus(Post.ModerationStatus.NEW);
         post.setViewCount(0);
         postRepository.save(post);
@@ -115,7 +104,6 @@ public class PostService {
      * @param query  - поисковый запрос
      */
     public ResponseEntity<PostCountResponse> searchPosts(int offset, int limit, String query) {
-        // Находим все отфильтрованные посты по запросу
         List<Post> foundedPosts = postRepository.findPostsByQuery(query);
         PostCountResponse postCountResponse = countPosts(foundedPosts, offset, limit);
         return new ResponseEntity<>(postCountResponse, HttpStatus.OK);
@@ -128,27 +116,31 @@ public class PostService {
      * @param id - id поста
      */
     public ResponseEntity<PostResponse> getPostById(int id) {
-        String sessionId = servletRequest.getSession().getId();
-        User user = userService.getUserFromSession(sessionId);
+        PostResponse postResponse;
+        User user = userService.getUserFromSession();
         Post post = postRepository.getPostById(id);
+
+        if (user == null) {
+            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
         if (post == null) {
             LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", id);
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-        PostResponse postResponse = migrateToPostResponse(post);
-        List<String> tags = post.getTags().stream().map(Tag::getName).collect(Collectors.toList());
-        if (user == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегистрирован!");
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
+        postResponse = migrateToPostResponse(post);
         // TODO разобраться со значением
         // должно быть значение true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
         postResponse.setActive(true);
         postResponse.setText(post.getText());
         // TODO проверить отображение
         postResponse.setComments(post.getComments());
-        postResponse.setTags(tags);
+        postResponse.setTags(post.getTags()
+                .stream()
+                .map(Tag::getName)
+                .collect(Collectors.toList()));
         // Пользователь не модератор и не автор
+        // TODO реализовать сервис инкремента просмотров
         if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
             int viewCount = post.getViewCount();
             postResponse.setViewCount(++viewCount);
@@ -175,21 +167,19 @@ public class PostService {
     /**
      * Список постов по тэгу - GET /api/post/byTag
      * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
-     * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit  - количество постов, которое надо вывести (10)
-     * @param tag    - тэг, по которому нужно вывести все посты
+     * @param offset  - сдвиг от 0 для постраничного вывода
+     * @param limit   - количество постов, которое надо вывести (10)
+     * @param tagName - тэг, по которому нужно вывести все посты
      */
-    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tag) {
-        // TODO переделать. Не находит записи по тэгам
-        List<Post> posts = postRepository.findAllFilteredPosts();
-        List<Post> filteredPosts = posts.stream()
-                .filter(post -> tagService.tagExistInList(tag, post.getTags()))
-                .collect(Collectors.toList());
-        PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
+    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tagName) {
+        List<Post> allPostsByTag = postRepository.findFilteredPostsByTag(tagName);
+        PostCountResponse postsCount = countPosts(allPostsByTag, offset, limit);
         return new ResponseEntity<>(postsCount, HttpStatus.OK);
     }
 
-    // Выбор сортировки отображаемых постов
+    /**
+     * Выбор сортировки отображаемых постов
+     */
     private List<Post> sortFilteredPosts(List<Post> list, String mode) {
         Comparator<Post> postComparator = null;
 
@@ -212,10 +202,13 @@ public class PostService {
         return list.stream().sorted(postComparator).collect(Collectors.toList());
     }
 
-    // Преобразование к количеству и списку постов для отображения
+    /**
+     * Преобразование к количеству и списку постов для отображения
+     */
     private PostCountResponse countPosts(List<Post> list, int offset, int limit) {
         List<PostResponse> postsList = new ArrayList<>();
         int count = list.size();        // кол-во постов
+
         list.stream()
                 .skip(offset)
                 .limit(limit)
@@ -227,24 +220,14 @@ public class PostService {
     }
 
     private PostResponse migrateToPostResponse(Post post) {
-        String postTime = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm").format(post.getTime().minusHours(3));
-        // Анонс поста (кусок текста) с проверкой кол-ва символов без HTML тэгов
-        String postAnnounce = (post.getText().length() > MIN_ANNOUNCE_TEXT_LENGTH)
-                ? post.getText().substring(0, MIN_ANNOUNCE_TEXT_LENGTH).concat("...")
-                : post.getText();
-        // Автор поста
-        User author = post.getUser();
-        // инициализация юзера
-        UserIdNameResponse user = new UserIdNameResponse();
-        user.setId(author.getId());
-        user.setName(author.getName());
-        // инициализация поста
         PostResponse postResponse = new PostResponse();
+        User author = post.getUser();
+
         postResponse.setId(post.getId());
-        postResponse.setTime(postTime);
-        postResponse.setUser(user);
+        postResponse.setTime(timeService.timeToString(post.getTime()));
+        postResponse.setUser(new UserIdNameResponse(author.getId(), author.getName()));
         postResponse.setTitle(post.getTitle());
-        postResponse.setAnnounce(postAnnounce.replaceAll("(<.*?>)|(&.*?;)|([ ]{2,})", " "));
+        postResponse.setAnnounce(textService.getAnnounce(post.getText()));
         postResponse.setLikeCount(0);      // TODO реализовать
         postResponse.setDislikeCount(0);   // TODO реализовать
         postResponse.setCommentCount(0);   // TODO реализовать

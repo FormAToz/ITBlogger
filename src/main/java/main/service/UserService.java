@@ -11,6 +11,7 @@ import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +23,12 @@ public class UserService {
     private Map<String, Integer> userIdFromSession;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private HttpServletRequest servletRequest;
 
-    // Создание тестового юзера
+    /**
+     * Создание тестового юзера
+     */
     public void createTestUser() {
         User u = new User();
         u.setName("Андрей Данилов");
@@ -49,7 +54,8 @@ public class UserService {
         userIdFromSession.put(sessionId, userId);
     }
 
-    public User getUserFromSession(String sessionId) {
+    public User getUserFromSession() {
+        String sessionId = servletRequest.getSession().getId();
         Integer userId = userIdFromSession.get(sessionId);
         if (userId == null) {
             LOGGER.info(MARKER, "Пользователь не зарегестрирован в сессии {}", sessionId);
