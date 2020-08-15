@@ -7,6 +7,8 @@ import main.repository.PostRepository;
 import main.repository.Tag2PostRepository;
 import main.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,9 +22,7 @@ public class TagService {
     @Autowired
     private TagRepository tagRepository;
     @Autowired
-    private PostRepository postRepository;
-    @Autowired
-    Tag2PostRepository tag2PostRepository;
+    private Tag2PostRepository tag2PostRepository;
 
     /**
      * Получение списка всех тэгов
@@ -31,7 +31,7 @@ public class TagService {
      * Значение 1 означает, что этот тэг встречается чаще всего.
      * weight вычисляется по формуле: кол-во вхождений тэга / количество вхождений самого популярного тэга
      */
-    public TagListResponse tags() {
+    public ResponseEntity<TagListResponse> tags() {
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();
@@ -51,7 +51,7 @@ public class TagService {
                 tags.add(new TagResponse(tagName, weight));
             }
         });
-        return new TagListResponse(tags);
+        return new ResponseEntity<>(new TagListResponse(tags), HttpStatus.OK);
     }
 
     /**

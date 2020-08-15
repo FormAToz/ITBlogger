@@ -1,6 +1,8 @@
 package main.service;
 
 import main.Main;
+import main.api.response.CalendarResponse;
+import main.api.response.StatisticsResponse;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.post.PostResponse;
@@ -242,6 +244,24 @@ public class PostService {
     }
 
     /**
+     * Метод фиксирует действие модератора по посту: его утверждение или отклонение.
+     * Кроме того, фиксируется moderator_id - идентификатор пользователя, который отмодерировал пост.
+     * Посты могут модерировать только пользователи с is_moderator = 1
+     *
+     * @param postId   - идентификатор поста
+     * @param decision - решение по посту: accept или decline.
+     */
+    public ResponseEntity<ResultResponse> moderate(int postId, String decision) {
+        if (true) {
+            //TODO
+            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+        }
+        else {
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
+    }
+
+    /**
      * Метод выводит только те посты, которые создал я (в соответствии с полем user_id в таблице posts базы данных).
      * Возможны 4 типа вывода (см. ниже описания значений параметра status).
      * @param offset - сдвиг от 0 для постраничного вывода
@@ -257,6 +277,20 @@ public class PostService {
         PostCountResponse postCount = null;
 
         return new ResponseEntity<>(postCount, HttpStatus.OK);
+    }
+
+    /**
+     * Метод выводит количества публикаций на каждую дату переданного в параметре year года или текущего года,
+     * если параметр year не задан. В параметре years всегда возвращается список всех годов,
+     * за которые была хотя бы одна публикация, в порядке возврастания.
+     *
+     * @param year - год в виде четырёхзначного числа, если не передан - возвращать за текущий год
+     */
+    public ResponseEntity<CalendarResponse> getAllPostsForCalendar(int year) {
+        // TODO
+        List<Integer> years = new ArrayList<>();
+        Map<String, Integer> posts = new HashMap<>();
+        return new ResponseEntity<>(new CalendarResponse(years, posts), HttpStatus.OK);
     }
 
     /**
@@ -293,5 +327,48 @@ public class PostService {
         postResponse.setViewCount(post.getViewCount());
 
         return postResponse;
+    }
+
+    /**
+     * Метод выдаёт статистику по всем постам блога. В случае, если публичный показ статистики блога запрещён
+     * (см. соответствующий параметр в global_settings) и текущий пользователь не модератор, должна выдаваться ошибка 401.
+     */
+    public ResponseEntity<StatisticsResponse> getGlobalStatistics() {
+        // TODO реализовать
+        return new ResponseEntity<>(new StatisticsResponse(), HttpStatus.OK);
+    }
+
+    /**
+     * Метод сохраняет в таблицу post_votes лайк текущего авторизованного пользователя.
+     * В случае повторного лайка возвращает {result: false}.
+     *
+     * Если до этого этот же пользователь поставил на этот же пост дизлайк, этот дизлайк должен быть заменен на лайк в базе данных.
+     * @param postId - id поста которому ставим лайк
+     */
+    public ResponseEntity<ResultResponse> likePost(int postId) {
+        if (true) {
+            //TODO
+            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+        }
+        else {
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
+    }
+
+    /**
+     * Метод сохраняет в таблицу post_votes дизлайк текущего авторизованного пользователя.
+     * В случае повторного дизлайка возвращает {result: false}.
+     *
+     * Если до этого этот же пользователь поставил на этот же пост лайк, этот лайк должен заменен на дизлайк в базе данных.
+     * @param postId - id поста
+     */
+    public ResponseEntity<ResultResponse> dislikePost(int postId) {
+        if (true) {
+            //TODO
+            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+        }
+        else {
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
     }
 }

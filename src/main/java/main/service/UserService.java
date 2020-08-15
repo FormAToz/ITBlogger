@@ -1,6 +1,7 @@
 package main.service;
 
 import main.Main;
+import main.api.response.StatisticsResponse;
 import main.model.Post;
 import main.model.User;
 import main.repository.UserRepository;
@@ -9,6 +10,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -70,5 +73,14 @@ public class UserService {
 
     public boolean isAuthor(User user, Post post) {
         return user.getId() == post.getUser().getId();
+    }
+
+    /**
+     * Метод возвращает статистику постов текущего авторизованного пользователя:
+     * общие количества параметров для всех публикаций, у который он является автором и доступные для чтения.
+     */
+    public ResponseEntity<StatisticsResponse> getMyStatistics() {
+        // TODO реализовать
+        return new ResponseEntity<>(new StatisticsResponse(), HttpStatus.OK);
     }
 }

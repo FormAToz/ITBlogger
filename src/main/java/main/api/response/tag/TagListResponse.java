@@ -1,4 +1,4 @@
-package main.api.response;
+package main.api.response.tag;
 
 import java.util.List;
 

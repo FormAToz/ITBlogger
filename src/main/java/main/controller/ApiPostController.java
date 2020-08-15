@@ -1,5 +1,6 @@
 package main.controller;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ResultResponse;
@@ -69,5 +70,17 @@ public class ApiPostController {
     @GetMapping("/my")
     public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
         return postService.getMyPosts(offset, limit, status);
+    }
+
+    // Лайк поста
+    @PostMapping("/like")
+    public ResponseEntity<ResultResponse> likePost(@JsonProperty("post_id") int postId) {
+        return postService.likePost(postId);
+    }
+
+    // Дизлайк поста
+    @PostMapping("/dislike")
+    public ResponseEntity<ResultResponse> dislikePost(@JsonProperty("post_id") int postId) {
+        return postService.dislikePost(postId);
     }
 }
