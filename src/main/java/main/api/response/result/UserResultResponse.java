@@ -1,6 +1,7 @@
-package main.api.response;
+package main.api.response.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import main.api.response.user.UserFullResponse;
 
 /**
  * Форматы ответов:
@@ -18,21 +19,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *   }
  * }
  */
-public class UserResultResponse {
-    private final boolean result;
+public class UserResultResponse extends ResultResponse{
     @JsonProperty("user")
     private final UserFullResponse userFullResponse;
 
     public UserResultResponse(boolean result, UserFullResponse userFullResponse) {
         this.result = result;
         this.userFullResponse = userFullResponse;
-    }
-
-    public boolean isResult() {
-        return result;
-    }
-
-    public UserFullResponse getUserFullResponse() {
-        return userFullResponse;
     }
 }

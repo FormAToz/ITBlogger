@@ -15,13 +15,13 @@ public class SettingsResponse {
     @JsonProperty("MULTIUSER_MODE")
     private final boolean multiUserMode;
     @JsonProperty("POST_PREMODERATION")
-    private final boolean postPremoderation;
+    private final boolean postPreModeration;
     @JsonProperty("STATISTICS_IS_PUBLIC")
     private final boolean statisticsIsPublic;
 
-    public SettingsResponse(boolean multiuserMode, boolean postPremoderation, boolean statisticsIsPublic) {
-        this.multiUserMode = multiuserMode;
-        this.postPremoderation = postPremoderation;
+    public SettingsResponse(boolean multiUserMode, boolean postPreModeration, boolean statisticsIsPublic) {
+        this.multiUserMode = multiUserMode;
+        this.postPreModeration = postPreModeration;
         this.statisticsIsPublic = statisticsIsPublic;
     }
 
@@ -29,8 +29,8 @@ public class SettingsResponse {
         return multiUserMode;
     }
 
-    public boolean isPostPremoderation() {
-        return postPremoderation;
+    public boolean isPostPreModeration() {
+        return postPreModeration;
     }
 
     public boolean isStatisticsIsPublic() {

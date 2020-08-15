@@ -1,10 +1,12 @@
 package main.service;
 
 import main.Main;
-import main.api.response.PostCountResponse;
-import main.api.response.PostResponse;
-import main.api.response.ResultResponse;
-import main.api.response.UserIdNameResponse;
+import main.api.response.post.PostCountResponse;
+import main.api.response.post.PostFullResponse;
+import main.api.response.post.PostResponse;
+import main.api.response.result.ErrorResultResponse;
+import main.api.response.result.ResultResponse;
+import main.api.response.user.UserResponse;
 import main.model.Post;
 import main.model.Tag;
 import main.model.User;
@@ -18,10 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,24 +40,7 @@ public class PostService {
     private TimeService timeService;
 
     /**
-     * Создание тестовых постов
-     */
-    private void createTestPosts() {
-        for (int i = 0; i < 100; i++) {
-            Post p = new Post();
-            p.setTitle("TestPost " + i);
-            p.setText("TestPost " + i + " TestPostTestPostTestPostTestPostTestPostTestPostTestPostTestPostTestPostTestPost");
-            p.setActive(1);
-            p.setTime(LocalDateTime.now().plusHours(3));
-            p.setModerationStatus(Post.ModerationStatus.ACCEPTED);
-            p.setUser(userService.getUserById(1));
-            p.setViewCount(0);
-            postRepository.save(p);
-        }
-    }
-
-    /**
-     * Список постов - GET /api/post/
+     * Список постов
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
      * @param mode   - режим вывода (сортировка):
@@ -69,111 +52,6 @@ public class PostService {
     public ResponseEntity<PostCountResponse> getPosts(int offset, int limit, String mode) {
         List<Post> filteredPosts = sortFilteredPosts(postRepository.findAllFilteredPosts(), mode);
         PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
-        return new ResponseEntity<>(postsCount, HttpStatus.OK);
-    }
-
-    /**
-     * Добавление поста - POST /api/post
-     */
-    public ResponseEntity<ResultResponse> addPost(Post post) {
-        User user = userService.getUserFromSession();
-
-        if (textService.titleAndTextIsShort(post.getTitle(), post.getText())) {
-            return textService.checkTitleAndTextLength(post.getTitle(), post.getText());
-        }
-        if (user == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        post.setUser(user);
-        post.setTags(tagService.checkDuplicatesInRepo(post.getTags()));
-        post.setTime(timeService.getExpectedTime(post.getTime()));
-        post.setModerationStatus(Post.ModerationStatus.NEW);
-        post.setViewCount(0);
-        postRepository.save(post);
-        LOGGER.info(MARKER, "Пост добавлен. Id: {}, title: {}. User Id: {}, name: {}",
-                post.getId(), post.getTitle(), post.getUser().getId(), post.getUser().getName());
-        return new ResponseEntity<>(new ResultResponse(true, null), HttpStatus.OK);
-    }
-
-    /**
-     * Поиск постов - GET /api/post/search/
-     * Метод возвращает посты, соответствующие поисковому запросу - строке query.
-     * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit  - количество постов, которое надо вывести
-     * @param query  - поисковый запрос
-     */
-    public ResponseEntity<PostCountResponse> searchPosts(int offset, int limit, String query) {
-        List<Post> foundedPosts = postRepository.findPostsByQuery(query);
-        PostCountResponse postCountResponse = countPosts(foundedPosts, offset, limit);
-        return new ResponseEntity<>(postCountResponse, HttpStatus.OK);
-    }
-
-    /**
-     * Получение поста - GET /api/post/{ID}
-     * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
-     * список комментариев и тэгов, привязанных к данному посту.
-     * @param id - id поста
-     */
-    public ResponseEntity<PostResponse> getPostById(int id) {
-        PostResponse postResponse;
-        User user = userService.getUserFromSession();
-        Post post = postRepository.getPostById(id);
-
-        if (user == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        if (post == null) {
-            LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", id);
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        postResponse = migrateToPostResponse(post);
-        // TODO разобраться со значением
-        // должно быть значение true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
-        postResponse.setActive(true);
-        postResponse.setText(post.getText());
-        // TODO проверить отображение
-        postResponse.setComments(post.getComments());
-        postResponse.setTags(post.getTags()
-                .stream()
-                .map(Tag::getName)
-                .collect(Collectors.toList()));
-        // Пользователь не модератор и не автор
-        // TODO реализовать сервис инкремента просмотров
-        if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
-            int viewCount = post.getViewCount();
-            postResponse.setViewCount(++viewCount);
-            post.setViewCount(viewCount);
-            postRepository.save(post);
-        }
-        return new ResponseEntity<>(postResponse, HttpStatus.OK);
-    }
-
-    /**
-     * Список постов за указанную дату - GET /api/post/byDate
-     * Выводит посты за указанную дату, переданную в запросе в параметре date.
-     * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit  - количество постов, которое надо вывести (10)
-     * @param date   - дата в формате "2019-10-15"
-     */
-    public ResponseEntity<PostCountResponse> getPostsByDate(int offset, int limit, String date) {
-        // TODO проверить дату и реализовать вывод по указанной дате
-        List<Post> filteredPosts = postRepository.findAllFilteredPosts();
-        PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
-        return new ResponseEntity<>(postsCount, HttpStatus.OK);
-    }
-
-    /**
-     * Список постов по тэгу - GET /api/post/byTag
-     * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
-     * @param offset  - сдвиг от 0 для постраничного вывода
-     * @param limit   - количество постов, которое надо вывести (10)
-     * @param tagName - тэг, по которому нужно вывести все посты
-     */
-    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tagName) {
-        List<Post> allPostsByTag = postRepository.findFilteredPostsByTag(tagName);
-        PostCountResponse postsCount = countPosts(allPostsByTag, offset, limit);
         return new ResponseEntity<>(postsCount, HttpStatus.OK);
     }
 
@@ -203,6 +81,185 @@ public class PostService {
     }
 
     /**
+     * Добавление поста
+     */
+    public ResponseEntity<ResultResponse> addPost(Post post) {
+        User user = userService.getUserFromSession();
+
+        if (textService.titleAndTextIsShort(post.getTitle(), post.getText())) {
+            return textService.checkTitleAndTextLength(post.getTitle(), post.getText());
+        }
+
+        if (user == null) {
+            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+
+        post.setUser(user);
+        post.setTags(tagService.checkDuplicatesInRepo(post.getTags()));
+        post.setTime(timeService.getExpectedTime(post.getTime()));
+        post.setModerationStatus(Post.ModerationStatus.NEW);
+        post.setViewCount(0);
+        postRepository.save(post);
+
+        LOGGER.info(MARKER, "Пост добавлен. Id: {}, title: {}. User Id: {}, name: {}",
+                post.getId(), post.getTitle(), post.getUser().getId(), post.getUser().getName());
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    /**
+     * Метод изменяет данные поста с идентификатором ID на те, которые пользователь ввёл в форму публикации.
+     * В случае, если заголовок или текст поста не установлены и/или слишком короткие (короче 3 и 50 символов соответственно),
+     * метод должен выводить ошибку и не изменять пост.
+     *
+     * Время публикации поста также должно проверяться: в случае, если время публикации раньше текущего времени,
+     * оно должно автоматически становиться текущим. Если позже текущего - необходимо устанавливать указанное значение.
+     *
+     * Пост должен сохраняться со статусом модерации NEW, если его изменил автор, и статус модерации не должен изменяться,
+     * если его изменил модератор.
+     *
+     * @param id - id поста
+     * @param post:
+     *          timestamp - дата и время публикации в формате UTC
+     *          active - 1 или 0, открыть пост или скрыть
+     *          title - заголовок поста
+     *          text - текст поста в формате HTML
+     *          tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
+     */
+    public ResponseEntity<ResultResponse> updatePost(int id, Post post) {
+        if (true) {
+            // TODO пост обновлен
+
+            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+        }
+        else {
+            // TODO в случае ошибки
+            Map<String, String> errors = new HashMap<>();
+
+            return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.OK);
+        }
+    }
+
+    /**
+     * Поиск постов
+     * Метод возвращает посты, соответствующие поисковому запросу - строке query.
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести
+     * @param query  - поисковый запрос
+     */
+    public ResponseEntity<PostCountResponse> searchPosts(int offset, int limit, String query) {
+        List<Post> foundedPosts = postRepository.findPostsByQuery(query);
+        PostCountResponse postCountResponse = countPosts(foundedPosts, offset, limit);
+        return new ResponseEntity<>(postCountResponse, HttpStatus.OK);
+    }
+
+    /**
+     * Получение поста
+     * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
+     * список комментариев и тэгов, привязанных к данному посту.
+     * @param id - id поста
+     */
+    public ResponseEntity<PostFullResponse> getPostById(int id) {
+        PostFullResponse postFullResponse;
+        User user = userService.getUserFromSession();
+        Post post = postRepository.getPostById(id);
+
+        if (user == null) {
+            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+        if (post == null) {
+            LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", id);
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+
+        postFullResponse = migrateToPostResponse(new PostFullResponse(), post);
+        // TODO разобраться со значением
+        // должно быть значение true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
+        postFullResponse.setActive(true);
+        postFullResponse.setText(post.getText());
+        // TODO проверить отображение
+        postFullResponse.setComments(post.getComments());
+        postFullResponse.setTags(post.getTags()
+                .stream()
+                .map(Tag::getName)
+                .collect(Collectors.toList()));
+        // Пользователь не модератор и не автор
+        // TODO реализовать сервис инкремента просмотров
+        if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
+            int viewCount = post.getViewCount();
+            postFullResponse.setViewCount(++viewCount);
+            post.setViewCount(viewCount);
+            postRepository.save(post);
+        }
+        return new ResponseEntity<>(postFullResponse, HttpStatus.OK);
+    }
+
+    /**
+     * Список постов за указанную дату
+     * Выводит посты за указанную дату, переданную в запросе в параметре date.
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести (10)
+     * @param date   - дата в формате "2019-10-15"
+     */
+    public ResponseEntity<PostCountResponse> getPostsByDate(int offset, int limit, String date) {
+        // TODO проверить дату и реализовать вывод по указанной дате
+        List<Post> filteredPosts = postRepository.findAllFilteredPosts();
+        PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
+        return new ResponseEntity<>(postsCount, HttpStatus.OK);
+    }
+
+    /**
+     * Список постов по тэгу
+     * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
+     * @param offset  - сдвиг от 0 для постраничного вывода
+     * @param limit   - количество постов, которое надо вывести (10)
+     * @param tagName - тэг, по которому нужно вывести все посты
+     */
+    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tagName) {
+        List<Post> allPostsByTag = postRepository.findFilteredPostsByTag(tagName);
+        PostCountResponse postsCount = countPosts(allPostsByTag, offset, limit);
+        return new ResponseEntity<>(postsCount, HttpStatus.OK);
+    }
+
+    /**
+     * Метод выводит все посты, которые требуют модерационных действий (которые нужно утвердить или отклонить)
+     * или над которыми мною были совершены модерационные действия: которые я отклонил или утвердил
+     * (это определяется полями moderation_status и moderator_id в таблице posts базы данных).
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести
+     * @param status - статус модерации:
+     *               new - новые, необходима модерация;
+     *               declined - отклонённые мной;
+     *               accepted - утверждённые мной
+     */
+    public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
+        // TODO
+        PostCountResponse postCount = null;
+
+        return new ResponseEntity<>(postCount, HttpStatus.OK);
+    }
+
+    /**
+     * Метод выводит только те посты, которые создал я (в соответствии с полем user_id в таблице posts базы данных).
+     * Возможны 4 типа вывода (см. ниже описания значений параметра status).
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit - количество постов, которое надо вывести
+     * @param status - статус модерации:
+     *              inactive - скрытые, ещё не опубликованы (is_active = 0);
+     *              pending - активные, ожидают утверждения модератором (is_active = 1, moderation_status = NEW);
+     *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
+     *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
+     */
+    public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
+        // TODO
+        PostCountResponse postCount = null;
+
+        return new ResponseEntity<>(postCount, HttpStatus.OK);
+    }
+
+    /**
      * Преобразование к количеству и списку постов для отображения
      */
     private PostCountResponse countPosts(List<Post> list, int offset, int limit) {
@@ -213,25 +270,28 @@ public class PostService {
                 .skip(offset)
                 .limit(limit)
                 .forEach(post -> {
-                    PostResponse postResponse = migrateToPostResponse(post);
+                    PostResponse postResponse = migrateToPostResponse(new PostResponse(), post);
                     postsList.add(postResponse);
                 });
         return new PostCountResponse(count, postsList);
     }
 
-    private PostResponse migrateToPostResponse(Post post) {
-        PostResponse postResponse = new PostResponse();
+    /**
+     * Преобразование post -> postResponse
+     */
+    private <T extends PostResponse>T migrateToPostResponse(T postResponse, Post post) {
         User author = post.getUser();
 
         postResponse.setId(post.getId());
         postResponse.setTime(timeService.timeToString(post.getTime()));
-        postResponse.setUser(new UserIdNameResponse(author.getId(), author.getName()));
+        postResponse.setUser(new UserResponse(author.getId(), author.getName()));
         postResponse.setTitle(post.getTitle());
         postResponse.setAnnounce(textService.getAnnounce(post.getText()));
         postResponse.setLikeCount(0);      // TODO реализовать
         postResponse.setDislikeCount(0);   // TODO реализовать
         postResponse.setCommentCount(0);   // TODO реализовать
         postResponse.setViewCount(post.getViewCount());
+
         return postResponse;
     }
 }

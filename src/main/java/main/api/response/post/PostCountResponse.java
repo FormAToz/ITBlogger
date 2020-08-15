@@ -1,4 +1,4 @@
-package main.api.response;
+package main.api.response.post;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
  * 	"posts": [
  *                {
  * 			"id": 345,
- * 			"time": "Вчера, 17:32",
+ * 			"time": "02 августа 2020, 22:34",
  * 			"user":
  *                {
  * 				"id": 88,

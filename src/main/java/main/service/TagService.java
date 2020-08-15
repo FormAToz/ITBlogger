@@ -1,7 +1,7 @@
 package main.service;
 
-import main.api.response.TagListResponse;
-import main.api.response.TagResponse;
+import main.api.response.tag.TagListResponse;
+import main.api.response.tag.TagResponse;
 import main.model.Tag;
 import main.repository.PostRepository;
 import main.repository.Tag2PostRepository;
@@ -25,7 +25,7 @@ public class TagService {
     Tag2PostRepository tag2PostRepository;
 
     /**
-     * Получение списка тэгов - GET /api/tag/
+     * Получение списка всех тэгов
      * Метод выдаёт список тэгов. В параметре weight должен быть указан
      * относительный нормированный вес тэга от 0 до 1, соответствующий частоте его встречаемости.
      * Значение 1 означает, что этот тэг встречается чаще всего.
@@ -35,11 +35,11 @@ public class TagService {
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();
+
         // Первая запись - самый популярный тэг
         Object[] first = tagCountList.get(0);
         long popularTagCount = (long) first[1];
 
-        // Заполняем лист
         tagCountList.forEach(row -> {
             String tagName = (String) row[0];
             long tagCount = (long) row[1];
@@ -55,8 +55,8 @@ public class TagService {
     }
 
     /**
-     * Проверяем тэги на наличие в базе.
-     * Если тэг есть в базе, берем его оттуда, иначе перекладываем в проверенный список
+     * Проверяем тэги на наличие в базе и перекладываем в проверенный список.
+     * Если тэг есть в базе, берем его оттуда, иначе перекладываем из непроверенного списка.
      */
     public List<Tag> checkDuplicatesInRepo(List<Tag> uncheckedList) {
         List<Tag> checkedList = new ArrayList<>();

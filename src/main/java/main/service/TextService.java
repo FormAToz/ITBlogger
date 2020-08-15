@@ -1,6 +1,7 @@
 package main.service;
 
-import main.api.response.ResultResponse;
+import main.api.response.result.ErrorResultResponse;
+import main.api.response.result.ResultResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class TextService {
         if (text.length() < MIN_TEXT_LENGTH) {
             errors.put("text", "Текст публикации менее " + MIN_TEXT_LENGTH + " символов");
         }
-        return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.BAD_REQUEST);
     }
 
     public boolean titleAndTextIsShort(String title, String text) {

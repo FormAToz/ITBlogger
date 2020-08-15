@@ -1,41 +1,34 @@
 package main.controller;
 
-        import main.api.response.UserFullResponse;
-        import main.api.response.UserResultResponse;
-        import main.service.UserService;
-        import org.springframework.http.HttpStatus;
-        import org.springframework.http.ResponseEntity;
-        import org.springframework.web.bind.annotation.GetMapping;
-        import org.springframework.web.bind.annotation.RequestMapping;
-        import org.springframework.web.bind.annotation.RestController;
+import main.api.response.result.ResultResponse;
+import main.service.AuthorizationService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-        import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
-/**
- * Класс обрабатывает все запросы /api/auth/*
- * */
 @RestController
 @RequestMapping("api/auth")
 public class ApiAuthController {
-    private final UserService userService;
+    private final AuthorizationService authorizationService;
 
-    public ApiAuthController(UserService userService) {
-        this.userService = userService;
+    public ApiAuthController(AuthorizationService authorizationService) {
+        this.authorizationService = authorizationService;
     }
 
-    @GetMapping("check")
-    public ResponseEntity<UserResultResponse> check(HttpServletRequest request) {
-        UserFullResponse user = new UserFullResponse();
-        user.setName("Андрей Данилов");
-        user.setId(1);
-        user.setEmail("7.danilov@gmail.com");
-        user.setModeration(true);
-        user.setModerationCount(0);
-        user.setSettings(true);
+    /**
+     * Метод возвращает информацию о текущем авторизованном пользователе, если он авторизован.
+     */
+    @GetMapping("/check")
+    public ResponseEntity<ResultResponse> check(HttpServletRequest request) {
+        return authorizationService.check(request);
+    }
 
-        String sessionId = request.getSession().getId();
-        userService.saveUserIdFromSession(user.getId(), sessionId);
-        UserResultResponse userResultResponse = new UserResultResponse(true, user);
-        return new ResponseEntity<>(userResultResponse, HttpStatus.OK);
+    @PostMapping("/login")
+    public ResponseEntity<ResultResponse> logIn(String e_mail, String password, HttpServletRequest request) {
+        return authorizationService.logIn(e_mail, password, request);
     }
 }

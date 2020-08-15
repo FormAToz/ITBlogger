@@ -1,4 +1,4 @@
-package main.api.response;
+package main.api.response.user;
 
 /**
  * Форматы ответов:
@@ -13,27 +13,26 @@ package main.api.response;
  *    "settings": true
  * }
  */
-public class UserFullResponse extends UserIdNameResponse{
-    private String photo;
+public class UserFullResponse extends UserResponse {
     private String email;
     private boolean moderation;
     private int moderationCount;
     private boolean settings;
 
     public int getId() {
-        return super.getId();
+        return id;
     }
 
     public void setId(int id) {
-        super.setId(id);
+        this.id = id;
     }
 
     public String getName() {
-        return super.getName();
+        return name;
     }
 
     public void setName(String name) {
-        super.setName(name);
+        this.name = name;
     }
 
     public String getPhoto() {

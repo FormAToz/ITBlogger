@@ -1,7 +1,8 @@
 package main.controller;
 
-import main.api.response.PostCountResponse;
-import main.api.response.PostResponse;
+import main.api.response.post.PostCountResponse;
+import main.api.response.post.PostFullResponse;
+import main.api.response.result.ResultResponse;
 import main.model.Post;
 import main.service.PostService;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class ApiPostController {
 
     // Добавление поста
     @PostMapping
-    public ResponseEntity addPost(@RequestBody Post post) {
+    public ResponseEntity<ResultResponse> addPost(@RequestBody Post post) {
         return postService.addPost(post);
     }
 
@@ -36,8 +37,14 @@ public class ApiPostController {
 
     // Получение поста
     @GetMapping("/{id}")
-    public ResponseEntity<PostResponse> getPostById(@PathVariable int id) {
+    public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
         return postService.getPostById(id);
+    }
+
+    // Редактирование поста
+    @PutMapping("/{id}")
+    public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody Post post) {
+        return postService.updatePost(id, post);
     }
 
     // Список постов за указанную дату
@@ -50,5 +57,17 @@ public class ApiPostController {
     @GetMapping("/byTag")
     public ResponseEntity<PostCountResponse> getAllPostsByTag(int offset, int limit, String tag) {
         return postService.getPostsByTag(offset, limit, tag);
+    }
+
+    // Список постов на модерацию
+    @GetMapping("/moderation")
+    public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
+        return postService.getPostsForModeration(offset, limit, status);
+    }
+
+    // Список моих постов
+    @GetMapping("/my")
+    public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
+        return postService.getMyPosts(offset, limit, status);
     }
 }
