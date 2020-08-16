@@ -14,10 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -44,12 +46,12 @@ public class UserService {
     }
 
     public User getUserById(int id) {
-        User user = userRepository.findById(id).get();
-        if (user == null) {
+        Optional user = userRepository.findById(id);
+        if (!user.isPresent()) {
             LOGGER.info(MARKER, "Пользователь с id={} не найден", id);
             return null;
         }
-        return user;
+        return (User) user.get();
     }
 
     public void saveUserIdFromSession(int userId, String sessionId) {
@@ -67,12 +69,15 @@ public class UserService {
         return getUserById(userId);
     }
 
-    public boolean isModerator(User user) {
-        return user.getIsModerator() == 1;
+    /**
+     * Модератор = 1. Не модератор = 0
+     */
+    public boolean notModerator(User user) {
+        return user.getIsModerator() == 0;
     }
 
-    public boolean isAuthor(User user, Post post) {
-        return user.getId() == post.getUser().getId();
+    public boolean notAuthor(User user, Post post) {
+        return user.getId() != post.getUser().getId();
     }
 
     /**

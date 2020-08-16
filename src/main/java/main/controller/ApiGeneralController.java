@@ -11,10 +11,7 @@ import main.api.response.tag.TagListResponse;
 import main.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -23,16 +20,14 @@ public class ApiGeneralController {
     private final TagService tagService;
     private final InitService initService;
     private final ImageService imageService;
-    private final CommentService commentService;
     private final PostService postService;
     private final AuthorizationService authorizationService;
     private final UserService userService;
 
-    public ApiGeneralController(TagService tagService, InitService initService, ImageService imageService, CommentService commentService, PostService postService, AuthorizationService authorizationService, UserService userService) {
+    public ApiGeneralController(TagService tagService, InitService initService, ImageService imageService, PostService postService, AuthorizationService authorizationService, UserService userService) {
         this.tagService = tagService;
         this.initService = initService;
         this.imageService = imageService;
-        this.commentService = commentService;
         this.postService = postService;
         this.authorizationService = authorizationService;
         this.userService = userService;
@@ -74,9 +69,10 @@ public class ApiGeneralController {
 
     // Отправка комментария к посту
     @PostMapping("/comment")
-    public ResponseEntity comment(CommentRequest commentRequest) {
-        // TODO проверить заполняется ли объект запроса
-        return commentService.addComment(commentRequest);
+    public ResponseEntity comment(@RequestBody CommentRequest commentRequest) {
+        // TODO delete sout
+        System.out.printf("Controller: ParentID: %s, PostId: %s, Text: %s%n", commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText());
+        return postService.addComment(commentRequest);
     }
 
     // Модерация поста

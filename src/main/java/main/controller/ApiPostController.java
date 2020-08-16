@@ -3,6 +3,7 @@ package main.controller;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
+import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.model.Post;
 import main.service.PostService;

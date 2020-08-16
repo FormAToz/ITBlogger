@@ -1,7 +1,9 @@
 package main.service;
 
 import main.Main;
+import main.api.request.CommentRequest;
 import main.api.response.CalendarResponse;
+import main.api.response.IdResponse;
 import main.api.response.StatisticsResponse;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
@@ -10,7 +12,7 @@ import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
 import main.model.Post;
-import main.model.Tag;
+import main.model.PostComment;
 import main.model.User;
 import main.repository.PostRepository;
 import org.apache.logging.log4j.LogManager;
@@ -22,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +42,8 @@ public class PostService {
     private TextService textService;
     @Autowired
     private TimeService timeService;
+    @Autowired
+    private CommentService commentService;
 
     /**
      * Список постов
@@ -69,7 +73,7 @@ public class PostService {
         }
         // Сортировать по убыванию количества комментариев
         if (mode.equals("popular")) {
-            // TODO реализовать сортирвку по убыванию количества комментариев
+            postComparator = Comparator.comparing((Post post) -> post.getComments().size()).reversed();
         }
         // Сортировать по убыванию количества лайков
         if (mode.equals("best")) {
@@ -79,6 +83,7 @@ public class PostService {
         if (mode.equals("early")) {
             postComparator = Comparator.comparing(Post::getTime);
         }
+
         return list.stream().sorted(postComparator).collect(Collectors.toList());
     }
 
@@ -168,7 +173,6 @@ public class PostService {
         Post post = postRepository.getPostById(id);
 
         if (user == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
         if (post == null) {
@@ -177,25 +181,31 @@ public class PostService {
         }
 
         postFullResponse = migrateToPostResponse(new PostFullResponse(), post);
-        // TODO разобраться со значением
-        // должно быть значение true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
-        postFullResponse.setActive(true);
+
+        postFullResponse.setActive(isActive(post));
         postFullResponse.setText(post.getText());
-        // TODO проверить отображение
-        postFullResponse.setComments(post.getComments());
-        postFullResponse.setTags(post.getTags()
-                .stream()
-                .map(Tag::getName)
-                .collect(Collectors.toList()));
-        // Пользователь не модератор и не автор
-        // TODO реализовать сервис инкремента просмотров
-        if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
-            int viewCount = post.getViewCount();
-            postFullResponse.setViewCount(++viewCount);
-            post.setViewCount(viewCount);
+        postFullResponse.setComments(commentService.migrateToCommentResponse(post));
+        postFullResponse.setTags(tagService.migrateToListTagName(post));
+        postFullResponse.setViewCount(incrementViews(user, post));
+
+        return new ResponseEntity<>(postFullResponse, HttpStatus.OK);
+    }
+
+    /**
+     * true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
+     */
+    private boolean isActive(Post post) {
+        return post.getActive() == 1;
+    }
+
+    private int incrementViews(User user, Post post) {
+        int viewCount = post.getViewCount();
+
+        if (userService.notModerator(user) && userService.notAuthor(user, post)) {
+            post.setViewCount(++viewCount);
             postRepository.save(post);
         }
-        return new ResponseEntity<>(postFullResponse, HttpStatus.OK);
+        return viewCount;
     }
 
     /**
@@ -323,7 +333,7 @@ public class PostService {
         postResponse.setAnnounce(textService.getAnnounce(post.getText()));
         postResponse.setLikeCount(0);      // TODO реализовать
         postResponse.setDislikeCount(0);   // TODO реализовать
-        postResponse.setCommentCount(0);   // TODO реализовать
+        postResponse.setCommentCount(post.getComments().size());
         postResponse.setViewCount(post.getViewCount());
 
         return postResponse;
@@ -370,5 +380,68 @@ public class PostService {
         else {
             return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
         }
+    }
+
+    /**
+     * Метод добавляет комментарий к посту. Должны проверяться все три параметра.
+     * Если параметры parent_id и/или post_id неверные (соответствующие комментарий и/или пост не существуют),
+     * должна выдаваться ошибка 400 (см. раздел “Обработка ошибок”).
+     * В случае, если текст комментария отсутствует (пустой) или слишком короткий, необходимо выдавать ошибку в JSON-формате.
+     *
+     * Пример запроса на добавление комментария к самому посту:
+     *
+     * {
+     *   "parent_id":"",
+     *   "post_id":21,
+     *   "text":"привет, какой интересный пост!"
+     * }
+     * Пример запроса на добавление комментария к другому комментарию:
+     *
+     * {
+     *   "parent_id":31,
+     *   "post_id":21,
+     *   "text":"текст комментария"
+     * }
+     *
+     * parent_id - ID комментария, на который пишется ответ
+     * post_id - ID поста, к которому пишется ответ
+     * text - текст комментария (формат HTML)
+     */
+    public ResponseEntity addComment(CommentRequest commentRequest) {
+        int parentCommentId = commentRequest.getParentId();
+        String text = commentRequest.getText();
+        User user = userService.getUserFromSession();
+        Post post = postRepository.getPostById(commentRequest.getPostId());
+        PostComment parentComment = null;
+        PostComment comment = new PostComment();
+
+        if (textService.textCommentIsShort(text)) {
+            return textService.textCommentResponseFalse();
+        }
+
+        if (post == null) {
+            LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", parentCommentId);
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+
+        // Если Id родительского комментария установлен, то ставим комментарий к родительскому комментарию
+        if (parentCommentId != 0) {
+            parentComment = commentService.getCommentById(parentCommentId);
+
+            if (parentComment == null) {
+                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            }
+
+            comment.setParentId(parentComment);
+        }
+
+        comment.setPostId(post);
+        comment.setText(text);
+        comment.setTime(timeService.getExpectedTime(LocalDateTime.now()));
+        comment.setUserId(user);
+
+        commentService.saveComment(comment);
+
+        return new ResponseEntity<>(new IdResponse(comment.getId()), HttpStatus.OK);
     }
 }

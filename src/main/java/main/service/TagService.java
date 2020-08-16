@@ -1,7 +1,9 @@
 package main.service;
 
+import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
 import main.api.response.tag.TagResponse;
+import main.model.Post;
 import main.model.Tag;
 import main.repository.PostRepository;
 import main.repository.Tag2PostRepository;
@@ -16,6 +18,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TagService {
@@ -35,6 +38,10 @@ public class TagService {
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();
+
+        if (tagCountList.isEmpty()) {
+            return new ResponseEntity<>(new TagListResponse(new ArrayList<>()), HttpStatus.OK);
+        }
 
         // Первая запись - самый популярный тэг
         Object[] first = tagCountList.get(0);
@@ -71,5 +78,12 @@ public class TagService {
             }
         }
         return checkedList;
+    }
+
+    public List<String> migrateToListTagName(Post post) {
+        return post.getTags()
+                .stream()
+                .map(Tag::getName)
+                .collect(Collectors.toList());
     }
 }

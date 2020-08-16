@@ -45,6 +45,9 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Post> posts;
 
+    @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY)
+    private List<PostComment> comments;
+
     public int getId() {
         return id;
     }
@@ -115,5 +118,13 @@ public class User {
 
     public void setPosts(List<Post> posts) {
         this.posts = posts;
+    }
+
+    public List<PostComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<PostComment> comments) {
+        this.comments = comments;
     }
 }

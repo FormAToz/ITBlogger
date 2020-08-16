@@ -14,10 +14,14 @@ import java.util.Map;
  * }
  */
 public class ErrorResultResponse extends ResultResponse{
-    private final Map errors;
+    private final Map<String, String> errors;
 
     public ErrorResultResponse(boolean result, Map errors) {
         this.result = result;
         this.errors = errors;
+    }
+
+    public Map<String, String> getErrors() {
+        return errors;
     }
 }

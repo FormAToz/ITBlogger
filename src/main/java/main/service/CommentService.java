@@ -1,29 +1,70 @@
 package main.service;
 
-import main.api.request.CommentRequest;
-import main.api.response.IdResponse;
-import main.api.response.result.ErrorResultResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import main.Main;
+import main.api.response.CommentResponse;
+import main.api.response.user.UserResponse;
+import main.model.Post;
+import main.model.PostComment;
+import main.model.User;
+import main.repository.PostCommentRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CommentService {
-    public ResponseEntity addComment(CommentRequest commentRequest) {
-        if (true) {
-            // TODO В случае успешного ответа
-            int id = commentRequest.getParentId(); // id комментария
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
 
-            return new ResponseEntity<>(new IdResponse(id), HttpStatus.OK);
-        }
-        else {
-            // TODO В случае ошибки
-            Map<String, String> errors = new HashMap<>();
+    @Autowired
+    private PostCommentRepository commentRepository;
+    @Autowired
+    private TimeService timeService;
 
-            return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.OK);
+    public PostComment getCommentById(int id) {
+        Optional comment = commentRepository.findById(id);
+
+        if (!comment.isPresent()) {
+            LOGGER.info(MARKER, "Комментарий с id={} не найден", id);
+            return null;
         }
+        return (PostComment) comment.get();
+    }
+
+    public void saveComment(PostComment comment) {
+        commentRepository.save(comment);
+    }
+
+    /**
+     * Преобразование post -> List<CommentResponse>
+     */
+    public List<CommentResponse> migrateToCommentResponse(Post post) {
+        List<CommentResponse> commentList = new ArrayList<>();
+
+        post.getComments().forEach(comment -> {
+            CommentResponse commentResponse = new CommentResponse();
+            User commentAuthor = comment.getUserId();
+
+            commentResponse.setId(comment.getId());
+            commentResponse.setTime(timeService.timeToString(comment.getTime()));
+            commentResponse.setText(comment.getText());
+            commentResponse.setUser(
+                    new UserResponse(
+                            commentAuthor.getId(),
+                            commentAuthor.getName(),
+                            commentAuthor.getPhoto())
+            );
+
+            commentList.add(commentResponse);
+        });
+
+        return commentList;
     }
 }

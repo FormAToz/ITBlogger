@@ -1,6 +1,6 @@
 package main.api.response.post;
 
-import main.model.PostComment;
+import main.api.response.CommentResponse;
 
 import java.util.List;
 
@@ -29,11 +29,11 @@ import java.util.List;
  *              "time": "Вчера, 17:32",
  *              "text": "Текст комментария в формате HTML",
  *              "user":
- *          {
- *              "id": 88,
- *              "name": "Дмитрий Петров",
- *              "photo": "/avatars/ab/cd/ef/52461.jpg"
- *          }
+ *                  {
+ *                      "id": 88,
+ *                      "name": "Дмитрий Петров",
+ *                      "photo": "/avatars/ab/cd/ef/52461.jpg"
+ *                  }
  *          },
  *          {...}
  *  ],
@@ -43,7 +43,7 @@ import java.util.List;
 public class PostFullResponse extends PostResponse{
     private boolean active;
     private String text;
-    private List<PostComment> comments;
+    private List<CommentResponse> comments;
     private List<String> tags;
 
     public boolean isActive() {
@@ -62,11 +62,11 @@ public class PostFullResponse extends PostResponse{
         this.text = text;
     }
 
-    public List<PostComment> getComments() {
+    public List<CommentResponse> getComments() {
         return comments;
     }
 
-    public void setComments(List<PostComment> comments) {
+    public void setComments(List<CommentResponse> comments) {
         this.comments = comments;
     }
 

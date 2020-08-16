@@ -14,6 +14,7 @@ public class TextService {
     private final int MIN_TITLE_LENGTH = 3;
     private final int MIN_TEXT_LENGTH = 50;
     private final int MIN_ANNOUNCE_TEXT_LENGTH = 40;
+    private final int MIN_COMMENT_LENGTH = 3;
 
     public ResponseEntity<ResultResponse> checkTitleAndTextLength(String title, String text) {
         Map<String, String> errors = new HashMap<>();
@@ -40,5 +41,20 @@ public class TextService {
                 : text;
 
         return postAnnounce.replaceAll("(<.*?>)|(&.*?;)|([ ]{2,})", " ");
+    }
+
+    public boolean textCommentIsShort(String text) {
+        return text.length() < MIN_COMMENT_LENGTH;
+    }
+
+    /**
+     * Ответ с ошибкой в случае, если текст комментария короткий
+     */
+    public ResponseEntity<ResultResponse> textCommentResponseFalse() {
+        Map<String, String> errors = new HashMap<>();
+
+        errors.put("text", "Текст комментария не задан или менее " + MIN_COMMENT_LENGTH + " символов");
+
+        return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.BAD_REQUEST);
     }
 }

@@ -3,6 +3,7 @@ package main.model;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "post_comments")
@@ -23,15 +24,17 @@ public class PostComment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name="parent_id")
     private PostComment parentId;
 
-    @Column(name="post_id", updatable = false, nullable = false)
-    private int postId;
+    @ManyToOne
+    @JoinColumn(name="post_id", updatable = false, nullable = false)
+    private Post postId;
 
-    @Column(name="user_id", updatable = false, nullable = false)
-    private int userId;
+    @ManyToOne
+    @JoinColumn(name="user_id", updatable = false, nullable = false)
+    private User userId;
 
     @NotNull
     private LocalDateTime time;
@@ -39,6 +42,9 @@ public class PostComment {
     @NotNull
     @Column(columnDefinition = "TEXT")
     private String text;
+
+    @OneToMany(mappedBy = "parentId", fetch = FetchType.LAZY)
+    private List<PostComment> comments;
 
     public int getId() {
         return id;
@@ -56,19 +62,19 @@ public class PostComment {
         this.parentId = parentId;
     }
 
-    public int getPostId() {
+    public Post getPostId() {
         return postId;
     }
 
-    public void setPostId(int postId) {
+    public void setPostId(Post postId) {
         this.postId = postId;
     }
 
-    public int getUserId() {
+    public User getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(User userId) {
         this.userId = userId;
     }
 
@@ -86,5 +92,13 @@ public class PostComment {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public List<PostComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<PostComment> comments) {
+        this.comments = comments;
     }
 }

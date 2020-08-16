@@ -27,4 +27,8 @@ public class UserResultResponse extends ResultResponse{
         this.result = result;
         this.userFullResponse = userFullResponse;
     }
+
+    public UserFullResponse getUserFullResponse() {
+        return userFullResponse;
+    }
 }
