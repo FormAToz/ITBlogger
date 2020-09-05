@@ -11,6 +11,10 @@ import main.api.response.post.PostResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
+import main.exception.PostNotFoundException;
+import main.exception.TextLengthException;
+import main.exception.TitleLengthException;
+import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
@@ -45,8 +49,13 @@ public class PostService {
     @Autowired
     private CommentService commentService;
 
+    public Post getPostById(int id) throws PostNotFoundException {
+        return postRepository.getPostById(id)
+                .orElseThrow(() -> new PostNotFoundException("Пост не найден"));
+    }
+
     /**
-     * Список постов
+     * Список всех постов
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
      * @param mode   - режим вывода (сортировка):
@@ -55,10 +64,10 @@ public class PostService {
      *               best - сортировать по убыванию количества лайков
      *               early - сортировать по дате публикации, выводить сначала старые
      */
-    public ResponseEntity<PostCountResponse> getPosts(int offset, int limit, String mode) {
+    public PostCountResponse getPosts(int offset, int limit, String mode) {
         List<Post> filteredPosts = sortFilteredPosts(postRepository.findAllFilteredPosts(), mode);
-        PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
-        return new ResponseEntity<>(postsCount, HttpStatus.OK);
+
+        return countPosts(filteredPosts, offset, limit);
     }
 
     /**
@@ -89,18 +98,16 @@ public class PostService {
 
     /**
      * Добавление поста
+     *
+     * Метод отправляет данные поста, которые пользователь ввёл в форму публикации. В случае, если заголовок
+     * или текст поста не установлены и/или слишком короткие, метод должен выводить ошибку и не добавлять пост.
+     *
+     * Пост должен сохраняться со статусом модерации NEW.
      */
-    public ResponseEntity<ResultResponse> addPost(Post post) {
+    public ResultResponse addPost(Post post) throws UserNotFoundException, TextLengthException, TitleLengthException {
         User user = userService.getUserFromSession();
 
-        if (textService.titleAndTextIsShort(post.getTitle(), post.getText())) {
-            return textService.checkTitleAndTextLength(post.getTitle(), post.getText());
-        }
-
-        if (user == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегистрирован в сессии!");
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
+        textService.checkTitleAndTextLength(post.getTitle(), post.getText());
 
         post.setUser(user);
         post.setTags(tagService.checkDuplicatesInRepo(post.getTags()));
@@ -112,7 +119,7 @@ public class PostService {
         LOGGER.info(MARKER, "Пост добавлен. Id: {}, title: {}. User Id: {}, name: {}",
                 post.getId(), post.getTitle(), post.getUser().getId(), post.getUser().getName());
 
-        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+        return new ResultResponse(true);
     }
 
     /**
@@ -134,17 +141,17 @@ public class PostService {
      *          text - текст поста в формате HTML
      *          tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
      */
-    public ResponseEntity<ResultResponse> updatePost(int id, Post post) {
+    public ResultResponse updatePost(int id, Post post) {
         if (true) {
             // TODO пост обновлен
 
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+            return new ResultResponse(true);
         }
         else {
             // TODO в случае ошибки
             Map<String, String> errors = new HashMap<>();
 
-            return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.OK);
+            return new ErrorResultResponse(false, errors);
         }
     }
 
@@ -155,32 +162,29 @@ public class PostService {
      * @param limit  - количество постов, которое надо вывести
      * @param query  - поисковый запрос
      */
-    public ResponseEntity<PostCountResponse> searchPosts(int offset, int limit, String query) {
+    public PostCountResponse searchPosts(int offset, int limit, String query) {
         List<Post> foundedPosts = postRepository.findPostsByQuery(query);
-        PostCountResponse postCountResponse = countPosts(foundedPosts, offset, limit);
-        return new ResponseEntity<>(postCountResponse, HttpStatus.OK);
+        return countPosts(foundedPosts, offset, limit);
     }
 
     /**
      * Получение поста
+     *
      * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
      * список комментариев и тэгов, привязанных к данному посту.
+     *
      * @param id - id поста
      */
-    public ResponseEntity<PostFullResponse> getPostById(int id) {
-        PostFullResponse postFullResponse;
+    public PostFullResponse getPostResponseById(int id) throws UserNotFoundException, PostNotFoundException {
         User user = userService.getUserFromSession();
-        Post post = postRepository.getPostById(id);
+        Post post = postRepository.getPostById(id)
+                .orElseThrow(() -> {
+                    String message = "Запрашиваемый пост с id = "+ id +" не существует";
+                    LOGGER.info(MARKER, message);
+                    return new PostNotFoundException(message);
+                });
 
-        if (user == null) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-        if (post == null) {
-            LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", id);
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-
-        postFullResponse = migrateToPostResponse(new PostFullResponse(), post);
+        PostFullResponse postFullResponse = migrateToPostResponse(new PostFullResponse(), post);
 
         postFullResponse.setActive(isActive(post));
         postFullResponse.setText(post.getText());
@@ -188,7 +192,7 @@ public class PostService {
         postFullResponse.setTags(tagService.migrateToListTagName(post));
         postFullResponse.setViewCount(incrementViews(user, post));
 
-        return new ResponseEntity<>(postFullResponse, HttpStatus.OK);
+        return postFullResponse;
     }
 
     /**
@@ -215,11 +219,11 @@ public class PostService {
      * @param limit  - количество постов, которое надо вывести (10)
      * @param date   - дата в формате "2019-10-15"
      */
-    public ResponseEntity<PostCountResponse> getPostsByDate(int offset, int limit, String date) {
+    public PostCountResponse getPostsByDate(int offset, int limit, String date) {
         // TODO проверить дату и реализовать вывод по указанной дате
         List<Post> filteredPosts = postRepository.findAllFilteredPosts();
-        PostCountResponse postsCount = countPosts(filteredPosts, offset, limit);
-        return new ResponseEntity<>(postsCount, HttpStatus.OK);
+
+        return countPosts(filteredPosts, offset, limit);
     }
 
     /**
@@ -229,10 +233,10 @@ public class PostService {
      * @param limit   - количество постов, которое надо вывести (10)
      * @param tagName - тэг, по которому нужно вывести все посты
      */
-    public ResponseEntity<PostCountResponse> getPostsByTag(int offset, int limit, String tagName) {
+    public PostCountResponse getPostsByTag(int offset, int limit, String tagName) {
         List<Post> allPostsByTag = postRepository.findFilteredPostsByTag(tagName);
-        PostCountResponse postsCount = countPosts(allPostsByTag, offset, limit);
-        return new ResponseEntity<>(postsCount, HttpStatus.OK);
+
+        return countPosts(allPostsByTag, offset, limit);
     }
 
     /**
@@ -246,11 +250,11 @@ public class PostService {
      *               declined - отклонённые мной;
      *               accepted - утверждённые мной
      */
-    public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
+    public PostCountResponse getPostsForModeration(int offset, int limit, String status) {
         // TODO
         PostCountResponse postCount = null;
 
-        return new ResponseEntity<>(postCount, HttpStatus.OK);
+        return postCount;
     }
 
     /**
@@ -282,11 +286,11 @@ public class PostService {
      *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
      *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
-    public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
+    public PostCountResponse getMyPosts(int offset, int limit, String status) {
         // TODO
         PostCountResponse postCount = null;
 
-        return new ResponseEntity<>(postCount, HttpStatus.OK);
+        return postCount;
     }
 
     /**
@@ -349,40 +353,6 @@ public class PostService {
     }
 
     /**
-     * Метод сохраняет в таблицу post_votes лайк текущего авторизованного пользователя.
-     * В случае повторного лайка возвращает {result: false}.
-     *
-     * Если до этого этот же пользователь поставил на этот же пост дизлайк, этот дизлайк должен быть заменен на лайк в базе данных.
-     * @param postId - id поста которому ставим лайк
-     */
-    public ResponseEntity<ResultResponse> likePost(int postId) {
-        if (true) {
-            //TODO
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
-    }
-
-    /**
-     * Метод сохраняет в таблицу post_votes дизлайк текущего авторизованного пользователя.
-     * В случае повторного дизлайка возвращает {result: false}.
-     *
-     * Если до этого этот же пользователь поставил на этот же пост лайк, этот лайк должен заменен на дизлайк в базе данных.
-     * @param postId - id поста
-     */
-    public ResponseEntity<ResultResponse> dislikePost(int postId) {
-        if (true) {
-            //TODO
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
-    }
-
-    /**
      * Метод добавляет комментарий к посту. Должны проверяться все три параметра.
      * Если параметры parent_id и/или post_id неверные (соответствующие комментарий и/или пост не существуют),
      * должна выдаваться ошибка 400 (см. раздел “Обработка ошибок”).
@@ -407,31 +377,25 @@ public class PostService {
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)
      */
-    public ResponseEntity addComment(CommentRequest commentRequest) {
+    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, TextLengthException {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
         User user = userService.getUserFromSession();
-        Post post = postRepository.getPostById(commentRequest.getPostId());
-        PostComment parentComment = null;
+        Post post = postRepository.getPostById(commentRequest.getPostId())
+                .orElseThrow(() -> {
+                    String message = "Запрашиваемый пост с id = " + parentCommentId + " не существует";
+                    LOGGER.info(MARKER, message);
+                    return new PostNotFoundException(message);
+                });
+        PostComment parentComment;
         PostComment comment = new PostComment();
 
-        if (textService.textCommentIsShort(text)) {
-            return textService.textCommentResponseFalse();
-        }
-
-        if (post == null) {
-            LOGGER.info(MARKER, "Запрашиваемый пост с id = {} не существует", parentCommentId);
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
+        textService.checkTextCommentLength(text);
 
         // Если Id родительского комментария установлен, то ставим комментарий к родительскому комментарию
         if (parentCommentId != 0) {
+
             parentComment = commentService.getCommentById(parentCommentId);
-
-            if (parentComment == null) {
-                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-            }
-
             comment.setParentId(parentComment);
         }
 
@@ -442,6 +406,6 @@ public class PostService {
 
         commentService.saveComment(comment);
 
-        return new ResponseEntity<>(new IdResponse(comment.getId()), HttpStatus.OK);
+        return new IdResponse(comment.getId());
     }
 }

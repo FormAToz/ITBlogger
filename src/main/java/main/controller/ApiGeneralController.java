@@ -2,17 +2,20 @@ package main.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import main.api.request.CommentRequest;
-import main.api.response.CalendarResponse;
-import main.api.response.InitResponse;
-import main.api.response.SettingsResponse;
-import main.api.response.StatisticsResponse;
+import main.api.response.*;
+import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
+import main.exception.PostNotFoundException;
+import main.exception.TextLengthException;
+import main.exception.UserNotFoundException;
 import main.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("api")
@@ -69,10 +72,22 @@ public class ApiGeneralController {
 
     // Отправка комментария к посту
     @PostMapping("/comment")
-    public ResponseEntity comment(@RequestBody CommentRequest commentRequest) {
-        // TODO delete sout
-        System.out.printf("Controller: ParentID: %s, PostId: %s, Text: %s%n", commentRequest.getParentId(), commentRequest.getPostId(), commentRequest.getText());
-        return postService.addComment(commentRequest);
+    public ResponseEntity<?> comment(@RequestBody CommentRequest commentRequest) {
+        IdResponse idResponse = null;
+
+        try {
+            idResponse = postService.addComment(commentRequest);
+
+        } catch (UserNotFoundException | PostNotFoundException e) {
+            e.printStackTrace();
+
+        } catch (TextLengthException e) {
+            return new ResponseEntity<ErrorResultResponse>(
+                    new ErrorResultResponse(
+                            false,
+                            Map.of("text", "Текст комментария не задан или слишком короткий")), HttpStatus.OK);
+        }
+        return new ResponseEntity<IdResponse>(idResponse, HttpStatus.OK);
     }
 
     // Модерация поста

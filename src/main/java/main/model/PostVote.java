@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
 @Table(name = "post_votes")
 public class PostVote {
     /**
-     *  Класс лайков и дизлайков постов
-     *
+     * Класс лайков и дизлайков постов
+     * ===============================
      * id       id лайка/дизлайка
-     * userId  тот, кто поставил лайк / дизлайк
-     * postId  пост, которому поставлен лайк / дизлайк
+     * user     тот, кто поставил лайк / дизлайк
+     * post     пост, которому поставлен лайк / дизлайк
      * time     дата и время лайка / дизлайка
      * value    лайк или дизлайк: 1 или -1
      * */
@@ -22,13 +22,13 @@ public class PostVote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @OneToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name="user_id", updatable = false)
-    private User userId;
+    private User user;
 
-    @OneToOne(optional = false)
+    @ManyToOne(optional = false)
     @JoinColumn(name="post_id", updatable = false)
-    private Post postId;
+    private Post post;
 
     @NotNull
     private LocalDateTime time;
@@ -44,20 +44,20 @@ public class PostVote {
         this.id = id;
     }
 
-    public User getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(User userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public Post getPostId() {
-        return postId;
+    public Post getPost() {
+        return post;
     }
 
-    public void setPostId(Post postId) {
-        this.postId = postId;
+    public void setPost(Post post) {
+        this.post = post;
     }
 
     public LocalDateTime getTime() {

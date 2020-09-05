@@ -2,6 +2,7 @@ package main.service;
 
 import main.Main;
 import main.api.response.StatisticsResponse;
+import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.User;
 import main.repository.UserRepository;
@@ -14,12 +15,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -45,13 +44,14 @@ public class UserService {
         userRepository.save(u);
     }
 
-    public User getUserById(int id) {
-        Optional user = userRepository.findById(id);
-        if (!user.isPresent()) {
-            LOGGER.info(MARKER, "Пользователь с id={} не найден", id);
-            return null;
-        }
-        return (User) user.get();
+    public User getUserById(int id) throws UserNotFoundException{
+
+        return userRepository.findById(id).orElseThrow(() -> {
+            String message = "Пользователь с id = " + id + " не найден";
+
+            LOGGER.info(MARKER, message);
+            return new UserNotFoundException(message);
+        });
     }
 
     public void saveUserIdFromSession(int userId, String sessionId) {
@@ -59,12 +59,15 @@ public class UserService {
         userIdFromSession.put(sessionId, userId);
     }
 
-    public User getUserFromSession() {
+    public User getUserFromSession() throws UserNotFoundException {
         String sessionId = servletRequest.getSession().getId();
-        Integer userId = userIdFromSession.get(sessionId);
-        if (userId == null) {
-            LOGGER.info(MARKER, "Пользователь не зарегестрирован в сессии {}", sessionId);
-            return null;
+        int userId = userIdFromSession.getOrDefault(sessionId, 0);
+
+        if (userId == 0) {
+            String message = "Пользователь не зарегестрирован в сессии - " + sessionId;
+
+            LOGGER.info(MARKER, message);
+            throw  new UserNotFoundException(message);
         }
         return getUserById(userId);
     }

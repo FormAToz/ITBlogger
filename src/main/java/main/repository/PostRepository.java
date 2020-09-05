@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, Integer> {
@@ -28,7 +29,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     List<Post> findPostsByQuery(@Param("query") String query);
 
     @Query(value = "from Post p " + POST_DISPLAY_FILTER + " and p.id = ?1")
-    Post getPostById(@Param("id") int id);
+    Optional<Post> getPostById(@Param("id") int id);
 
     @Query("from Post p join Tag2Post t2p on t2p.postId = p.id join Tag t on t2p.tagId = t.id " + POST_DISPLAY_FILTER + " and t.name like ?1")
     List<Post> findFilteredPostsByTag(@Param("tagName") String tagName);

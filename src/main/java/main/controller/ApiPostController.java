@@ -5,83 +5,133 @@ import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
+import main.exception.PostNotFoundException;
+import main.exception.TextLengthException;
+import main.exception.TitleLengthException;
+import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.service.PostService;
+import main.service.VoteService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/post")
 public class ApiPostController {
     private final PostService postService;
+    private final VoteService voteService;
 
-    public ApiPostController(PostService postService) {
+    public ApiPostController(PostService postService, VoteService voteService) {
         this.postService = postService;
+        this.voteService = voteService;
     }
 
     // Все посты для отображения
     @GetMapping
     public ResponseEntity<PostCountResponse> getAllPosts(int offset, int limit, String mode) {
-        return postService.getPosts(offset, limit, mode);
+        return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
     }
 
     // Добавление поста
     @PostMapping
     public ResponseEntity<ResultResponse> addPost(@RequestBody Post post) {
-        return postService.addPost(post);
+        ResultResponse resultResponse = null;
+
+        try {
+            resultResponse = postService.addPost(post);
+
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
+
+        } catch (TextLengthException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("text", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+
+        } catch (TitleLengthException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("title", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(resultResponse, HttpStatus.OK);
     }
 
     // Поиск поста
     @GetMapping("/search")
     public ResponseEntity<PostCountResponse> searchPost(int offset, int limit, String query) {
-        return postService.searchPosts(offset, limit, query);
+        return new ResponseEntity<>(postService.searchPosts(offset, limit, query), HttpStatus.OK);
     }
 
     // Получение поста
     @GetMapping("/{id}")
     public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
-        return postService.getPostById(id);
+        PostFullResponse response = null;
+
+        try {
+            response = postService.getPostResponseById(id);
+
+        } catch (UserNotFoundException | PostNotFoundException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return  new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     // Редактирование поста
     @PutMapping("/{id}")
     public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody Post post) {
-        return postService.updatePost(id, post);
+        ResultResponse response = postService.updatePost(id, post);
+
+        return new ResponseEntity<>(response, (response.isResult()
+                ? HttpStatus.OK
+                : HttpStatus.BAD_REQUEST));
     }
 
     // Список постов за указанную дату
     @GetMapping("/byDate")
     public ResponseEntity<PostCountResponse> getAllPostsByDate(int offset, int limit, String date) {
-        return postService.getPostsByDate(offset, limit, date);
+        return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
     // Список постов по тэгу
     @GetMapping("/byTag")
     public ResponseEntity<PostCountResponse> getAllPostsByTag(int offset, int limit, String tag) {
-        return postService.getPostsByTag(offset, limit, tag);
+        return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
     // Список постов на модерацию
     @GetMapping("/moderation")
     public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
-        return postService.getPostsForModeration(offset, limit, status);
+        return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
     // Список моих постов
     @GetMapping("/my")
     public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
-        return postService.getMyPosts(offset, limit, status);
+        return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
     }
 
     // Лайк поста
     @PostMapping("/like")
     public ResponseEntity<ResultResponse> likePost(@JsonProperty("post_id") int postId) {
-        return postService.likePost(postId);
+        ResultResponse resultResponse = null;
+
+        try {
+            resultResponse = voteService.likePost(postId);
+
+        } catch (PostNotFoundException | UserNotFoundException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(resultResponse, HttpStatus.OK);
     }
 
     // Дизлайк поста
     @PostMapping("/dislike")
     public ResponseEntity<ResultResponse> dislikePost(@JsonProperty("post_id") int postId) {
-        return postService.dislikePost(postId);
+        return new ResponseEntity<>(voteService.dislikePost(postId), HttpStatus.OK);
     }
 }
