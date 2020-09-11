@@ -3,7 +3,7 @@ package main.api.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Формат ответа:
+ * Класс запроса добавления комментария к посту:
  *
  * {
  *   "parent_id":31,
@@ -17,6 +17,12 @@ public class CommentRequest {
     @JsonProperty("post_id")
     private int postId;
     private String text;
+
+    public CommentRequest(int parentId, int postId, String text) {
+        this.parentId = parentId;
+        this.postId = postId;
+        this.text = text;
+    }
 
     public int getParentId() {
         return parentId;

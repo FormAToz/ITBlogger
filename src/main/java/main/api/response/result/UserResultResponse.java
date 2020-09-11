@@ -24,7 +24,7 @@ public class UserResultResponse extends ResultResponse{
     private final UserFullResponse userFullResponse;
 
     public UserResultResponse(boolean result, UserFullResponse userFullResponse) {
-        this.result = result;
+        super(result);
         this.userFullResponse = userFullResponse;
     }
 

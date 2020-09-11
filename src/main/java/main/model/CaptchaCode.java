@@ -1,5 +1,7 @@
 package main.model;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -8,11 +10,11 @@ import java.time.LocalDateTime;
 @Table(name = "captcha_codes")
 public class CaptchaCode {
     /**
-     * Класс кодов капч
+     * Класс кодов капчи
      *
      * id           id каптча
      * time         дата и время генерации кода капчи
-     * code         код, отображаемый на картинкке капчи
+     * code         код, отображаемый на картинке капчи
      * secretCode   код, передаваемый в параметре
      * */
 

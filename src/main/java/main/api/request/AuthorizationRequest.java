@@ -3,7 +3,7 @@ package main.api.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Формат ответа:
+ * Класс запроса с формы регистрации:
  *
  * {
  * 	"e_mail":"konstantin@mail.ru",
@@ -21,43 +21,51 @@ public class AuthorizationRequest {
     @JsonProperty("captcha_secret")
     private String captchaSecret;
 
-    public String getName() {
-        return name;
+    public AuthorizationRequest() {
     }
 
-    public void setName(String name) {
+    public AuthorizationRequest name(String name) {
         this.name = name;
+        return this;
+    }
+
+    public AuthorizationRequest code(String code) {
+        this.code = code;
+        return this;
+    }
+
+    public AuthorizationRequest password(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public AuthorizationRequest captcha(String captcha) {
+        this.captcha = captcha;
+        return this;
+    }
+
+    public AuthorizationRequest captchaSecret(String captchaSecret) {
+        this.captchaSecret = captchaSecret;
+        return this;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getCode() {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getCaptcha() {
         return captcha;
     }
 
-    public void setCaptcha(String captcha) {
-        this.captcha = captcha;
-    }
-
     public String getCaptchaSecret() {
         return captchaSecret;
-    }
-
-    public void setCaptchaSecret(String captchaSecret) {
-        this.captchaSecret = captchaSecret;
     }
 }

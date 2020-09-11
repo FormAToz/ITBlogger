@@ -46,35 +46,42 @@ public class PostFullResponse extends PostResponse{
     private List<CommentResponse> comments;
     private List<String> tags;
 
-    public boolean isActive() {
-        return active;
+    public PostFullResponse() {
     }
 
-    public void setActive(boolean active) {
+    public PostFullResponse active(boolean active) {
         this.active = active;
+        return this;
+    }
+
+    public PostFullResponse text(String text) {
+        this.text = text;
+        return this;
+    }
+
+    public PostFullResponse comments(List<CommentResponse> comments) {
+        this.comments = comments;
+        return this;
+    }
+
+    public PostFullResponse tags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     public String getText() {
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
     public List<CommentResponse> getComments() {
         return comments;
     }
 
-    public void setComments(List<CommentResponse> comments) {
-        this.comments = comments;
-    }
-
     public List<String> getTags() {
         return tags;
-    }
-
-    public void setTags(List<String> tags) {
-        this.tags = tags;
     }
 }

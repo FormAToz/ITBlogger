@@ -10,9 +10,6 @@ package main.api.response.result;
 public class ResultResponse {
     protected boolean result;
 
-    public ResultResponse() {
-    }
-
     public ResultResponse(boolean result) {
         this.result = result;
     }

@@ -12,5 +12,12 @@ spring:
     username: root
     password: testformat
 
+#Captcha properties
+captcha:
+  expiration-time: 3600 #seconds
 
-author: A.Danilov
+  image:
+    url: data:image/png;base64
+    height: 35
+    width: 100
+    format: png

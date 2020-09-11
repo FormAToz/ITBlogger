@@ -31,75 +31,87 @@ public class PostResponse {
     protected int commentCount;
     protected int viewCount;
 
-    public int getId() {
-        return id;
+    public PostResponse() {
     }
 
-    public void setId(int id) {
+    public PostResponse id(int id) {
         this.id = id;
+        return this;
+    }
+
+    public PostResponse time(String time) {
+        this.time = time;
+        return this;
+    }
+
+    public PostResponse user(UserResponse user) {
+        this.user = user;
+        return this;
+    }
+
+    public PostResponse title(String title) {
+        this.title = title;
+        return this;
+    }
+
+    public PostResponse announce(String announce) {
+        this.announce = announce;
+        return this;
+    }
+
+    public PostResponse likeCount(int likeCount) {
+        this.likeCount = likeCount;
+        return this;
+    }
+
+    public PostResponse dislikeCount(int dislikeCount) {
+        this.dislikeCount = dislikeCount;
+        return this;
+    }
+
+    public PostResponse commentCount(int commentCount) {
+        this.commentCount = commentCount;
+        return this;
+    }
+
+    public PostResponse viewCount(int viewCount) {
+        this.viewCount = viewCount;
+        return this;
+    }
+
+     public int getId() {
+        return id;
     }
 
     public String getTime() {
         return time;
     }
 
-    public void setTime(String time) {
-        this.time = time;
-    }
-
     public UserResponse getUser() {
         return user;
-    }
-
-    public void setUser(UserResponse user) {
-        this.user = user;
     }
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getAnnounce() {
         return announce;
-    }
-
-    public void setAnnounce(String announce) {
-        this.announce = announce;
     }
 
     public int getLikeCount() {
         return likeCount;
     }
 
-    public void setLikeCount(int likeCount) {
-        this.likeCount = likeCount;
-    }
-
     public int getDislikeCount() {
         return dislikeCount;
-    }
-
-    public void setDislikeCount(int dislikeCount) {
-        this.dislikeCount = dislikeCount;
     }
 
     public int getCommentCount() {
         return commentCount;
     }
 
-    public void setCommentCount(int commentCount) {
-        this.commentCount = commentCount;
-    }
-
     public int getViewCount() {
         return viewCount;
-    }
-
-    public void setViewCount(int viewCount) {
-        this.viewCount = viewCount;
     }
 }

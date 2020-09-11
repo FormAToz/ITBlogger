@@ -12,6 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring.version>2.2.4.RELEASE</spring.version>
+        <cage.version>1.0</cage.version>
     </properties>
 
     <build>
@@ -87,6 +88,14 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.18</version>
         </dependency>
+
+<!--    Captcha generator-->
+        <dependency>
+            <groupId>com.github.cage</groupId>
+            <artifactId>cage</artifactId>
+            <version>${cage.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -6,8 +6,7 @@ import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.exception.PostNotFoundException;
-import main.exception.TextLengthException;
-import main.exception.TitleLengthException;
+import main.exception.NoSuchTextLengthException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.service.PostService;
@@ -46,14 +45,9 @@ public class ApiPostController {
         } catch (UserNotFoundException e) {
             e.printStackTrace();
 
-        } catch (TextLengthException e) {
+        } catch (NoSuchTextLengthException e) {
             return new ResponseEntity<>(
-                    new ErrorResultResponse(false, Map.of("text", e.getMessage())),
-                    HttpStatus.BAD_REQUEST);
-
-        } catch (TitleLengthException e) {
-            return new ResponseEntity<>(
-                    new ErrorResultResponse(false, Map.of("title", e.getMessage())),
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())),
                     HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(resultResponse, HttpStatus.OK);
@@ -72,22 +66,18 @@ public class ApiPostController {
 
         try {
             response = postService.getPostResponseById(id);
-
-        } catch (UserNotFoundException | PostNotFoundException e) {
-            e.printStackTrace();
+        }
+        catch (UserNotFoundException | PostNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+
         return  new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     // Редактирование поста
     @PutMapping("/{id}")
     public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody Post post) {
-        ResultResponse response = postService.updatePost(id, post);
-
-        return new ResponseEntity<>(response, (response.isResult()
-                ? HttpStatus.OK
-                : HttpStatus.BAD_REQUEST));
+        return new ResponseEntity<>(postService.updatePost(id, post), HttpStatus.OK);
     }
 
     // Список постов за указанную дату

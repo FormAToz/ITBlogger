@@ -9,8 +9,8 @@ package main.api.response;
  * }
  */
 public class CaptchaResponse {
-    private String secret;
-    private String image;
+    private final String secret;
+    private final String image;
 
     public CaptchaResponse(String secret, String image) {
         this.secret = secret;
@@ -21,15 +21,7 @@ public class CaptchaResponse {
         return secret;
     }
 
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-
     public String getImage() {
         return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
     }
 }

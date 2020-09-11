@@ -19,59 +19,50 @@ public class UserFullResponse extends UserResponse {
     private int moderationCount;
     private boolean settings;
 
-    public int getId() {
-        return id;
+    public UserFullResponse() {
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public UserFullResponse(int id, String name) {
+        super(id, name);
     }
 
-    public String getName() {
-        return name;
+    public UserFullResponse(int id, String name, String photo) {
+        super(id, name, photo);
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public UserFullResponse email(String email) {
+        this.email = email;
+        return this;
     }
 
-    public String getPhoto() {
-        return photo;
+    public UserFullResponse moderation(boolean moderation) {
+        this.moderation = moderation;
+        return this;
     }
 
-    public void setPhoto(String photo) {
-        this.photo = photo;
+    public UserFullResponse moderationCount(int moderationCount) {
+        this.moderationCount = moderationCount;
+        return this;
+    }
+
+    public UserFullResponse settings(boolean settings) {
+        this.settings = settings;
+        return this;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public boolean isModeration() {
         return moderation;
-    }
-
-    public void setModeration(boolean moderation) {
-        this.moderation = moderation;
     }
 
     public int getModerationCount() {
         return moderationCount;
     }
 
-    public void setModerationCount(int moderationCount) {
-        this.moderationCount = moderationCount;
-    }
-
     public boolean isSettings() {
         return settings;
-    }
-
-    public void setSettings(boolean settings) {
-        this.settings = settings;
     }
 }

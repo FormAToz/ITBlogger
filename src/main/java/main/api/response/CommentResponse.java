@@ -16,40 +16,31 @@ import main.api.response.user.UserResponse;
  * }
  */
 public class CommentResponse {
-    private int id;
-    private String time;
-    private String text;
-    private UserResponse user;
+    private final int id;
+    private final String time;
+    private final String text;
+    private final UserResponse user;
+
+    public CommentResponse(int id, String time, String text, UserResponse user) {
+        this.id = id;
+        this.time = time;
+        this.text = text;
+        this.user = user;
+    }
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getTime() {
         return time;
     }
 
-    public void setTime(String time) {
-        this.time = time;
-    }
-
     public String getText() {
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
     public UserResponse getUser() {
         return user;
-    }
-
-    public void setUser(UserResponse user) {
-        this.user = user;
     }
 }

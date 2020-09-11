@@ -13,20 +13,44 @@ package main.api.response;
  * }
  */
 public class InitResponse {
-    private final String title;
-    private final String subtitle;
-    private final String phone;
-    private final String email;
-    private final String copyright;
-    private final String copyrightFrom;
+    private String title;
+    private String subtitle;
+    private String phone;
+    private String email;
+    private String copyright;
+    private String copyrightFrom;
 
-    public InitResponse(String title, String subtitle, String phone, String email, String copyright, String copyrightFrom) {
+    public InitResponse() {
+    }
+
+    public InitResponse title(String title) {
         this.title = title;
+        return this;
+    }
+
+    public InitResponse subtitle(String subtitle) {
         this.subtitle = subtitle;
+        return this;
+    }
+
+    public InitResponse phone(String phone) {
         this.phone = phone;
+        return this;
+    }
+
+    public InitResponse email(String email) {
         this.email = email;
+        return this;
+    }
+
+    public InitResponse copyright(String copyright) {
         this.copyright = copyright;
+        return this;
+    }
+
+    public InitResponse copyrightFrom(String copyrightFrom) {
         this.copyrightFrom = copyrightFrom;
+        return this;
     }
 
     public String getTitle() {

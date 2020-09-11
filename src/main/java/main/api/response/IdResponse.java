@@ -8,7 +8,7 @@ package main.api.response;
  * }
  */
 public class IdResponse {
-    private int id;
+    private final int id;
 
     public IdResponse(int id) {
         this.id = id;
@@ -16,9 +16,5 @@ public class IdResponse {
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 }

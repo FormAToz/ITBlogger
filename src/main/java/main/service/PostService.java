@@ -12,8 +12,7 @@ import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
 import main.exception.PostNotFoundException;
-import main.exception.TextLengthException;
-import main.exception.TitleLengthException;
+import main.exception.NoSuchTextLengthException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
@@ -50,7 +49,7 @@ public class PostService {
     private CommentService commentService;
 
     public Post getPostById(int id) throws PostNotFoundException {
-        return postRepository.getPostById(id)
+        return postRepository.getFilteredPostById(id)
                 .orElseThrow(() -> new PostNotFoundException("Пост не найден"));
     }
 
@@ -104,7 +103,7 @@ public class PostService {
      *
      * Пост должен сохраняться со статусом модерации NEW.
      */
-    public ResultResponse addPost(Post post) throws UserNotFoundException, TextLengthException, TitleLengthException {
+    public ResultResponse addPost(Post post) throws UserNotFoundException, NoSuchTextLengthException {
         User user = userService.getUserFromSession();
 
         textService.checkTitleAndTextLength(post.getTitle(), post.getText());
@@ -163,7 +162,7 @@ public class PostService {
      * @param query  - поисковый запрос
      */
     public PostCountResponse searchPosts(int offset, int limit, String query) {
-        List<Post> foundedPosts = postRepository.findPostsByQuery(query);
+        List<Post> foundedPosts = postRepository.findFilteredPostsByQuery(query);
         return countPosts(foundedPosts, offset, limit);
     }
 
@@ -177,23 +176,25 @@ public class PostService {
      */
     public PostFullResponse getPostResponseById(int id) throws UserNotFoundException, PostNotFoundException {
         User user = userService.getUserFromSession();
-        Post post = postRepository.getPostById(id)
-                .orElseThrow(() -> {
-                    String message = "Запрашиваемый пост с id = "+ id +" не существует";
-                    LOGGER.info(MARKER, message);
-                    return new PostNotFoundException(message);
-                });
+        Post post =
+                (userService.isNotModerator(user)   // пост не будет получен, если пользователь не модератор
+                        ? postRepository.getFilteredPostById(id)
+                        : postRepository.findById(id))
+                        .orElseThrow(() -> {
+                            String message = "Запрашиваемый пост с id = " + id + " не найден";
+                            LOGGER.info(MARKER, message);
+                            return new PostNotFoundException(message);
+                        });
 
-        PostFullResponse postFullResponse = migrateToPostResponse(new PostFullResponse(), post);
-
-        postFullResponse.setActive(isActive(post));
-        postFullResponse.setText(post.getText());
-        postFullResponse.setComments(commentService.migrateToCommentResponse(post));
-        postFullResponse.setTags(tagService.migrateToListTagName(post));
-        postFullResponse.setViewCount(incrementViews(user, post));
-
-        return postFullResponse;
+        // TODO проверить изменение счетчика просмотров
+        return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
+                .active(isActive(post))
+                .text(post.getText())
+                .comments(commentService.migrateToCommentResponse(post))
+                .tags(tagService.migrateToListTagName(post))
+                .viewCount(incrementViews(user, post));
     }
+
 
     /**
      * true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
@@ -202,15 +203,20 @@ public class PostService {
         return post.getActive() == 1;
     }
 
+
+    /**
+     * Метод увеличения кол-ва просмотров
+     */
     private int incrementViews(User user, Post post) {
         int viewCount = post.getViewCount();
 
-        if (userService.notModerator(user) && userService.notAuthor(user, post)) {
+        if (userService.isNotModerator(user) && userService.isNotAuthor(user, post)) {
             post.setViewCount(++viewCount);
             postRepository.save(post);
         }
         return viewCount;
     }
+
 
     /**
      * Список постов за указанную дату
@@ -221,10 +227,9 @@ public class PostService {
      */
     public PostCountResponse getPostsByDate(int offset, int limit, String date) {
         // TODO проверить дату и реализовать вывод по указанной дате
-        List<Post> filteredPosts = postRepository.findAllFilteredPosts();
-
-        return countPosts(filteredPosts, offset, limit);
+        return countPosts(postRepository.findAllFilteredPosts(), offset, limit);
     }
+
 
     /**
      * Список постов по тэгу
@@ -234,10 +239,9 @@ public class PostService {
      * @param tagName - тэг, по которому нужно вывести все посты
      */
     public PostCountResponse getPostsByTag(int offset, int limit, String tagName) {
-        List<Post> allPostsByTag = postRepository.findFilteredPostsByTag(tagName);
-
-        return countPosts(allPostsByTag, offset, limit);
+        return countPosts(postRepository.findFilteredPostsByTag(tagName), offset, limit);
     }
+
 
     /**
      * Метод выводит все посты, которые требуют модерационных действий (которые нужно утвердить или отклонить)
@@ -251,11 +255,17 @@ public class PostService {
      *               accepted - утверждённые мной
      */
     public PostCountResponse getPostsForModeration(int offset, int limit, String status) {
-        // TODO
-        PostCountResponse postCount = null;
-
-        return postCount;
+        return countPosts(postRepository.findAllPostsForModerationByStatus(status), offset, limit);
     }
+
+
+    /**
+     * Метод подсчета всех постов, ожидающих модерации
+     */
+    public int countPostsForModeration() {
+        return postRepository.findAllPostsForModeration().size();
+    }
+
 
     /**
      * Метод фиксирует действие модератора по посту: его утверждение или отклонение.
@@ -265,15 +275,46 @@ public class PostService {
      * @param postId   - идентификатор поста
      * @param decision - решение по посту: accept или decline.
      */
-    public ResponseEntity<ResultResponse> moderate(int postId, String decision) {
-        if (true) {
-            //TODO
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    public boolean moderate(int postId, String decision) throws UserNotFoundException, PostNotFoundException {
+        User user = userService.getUserFromSession();
+
+        if (userService.isNotModerator(user)) {
+            return false;
         }
-        else {
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> {
+                            String message = "Запрашиваемый пост с id = " + postId + " не найден";
+                            LOGGER.info(MARKER, message);
+                            return new PostNotFoundException(message);
+                        });
+
+        post.setModeratorId(user.getId());
+        post.setModerationStatus(getModerationStatus(post.getModerationStatus(), decision));
+        postRepository.save(post);
+
+        LOGGER.info(MARKER,
+                "Статус поста с id = {} успешно обновлен на {}", post.getId(), post.getModerationStatus().name());
+
+        return true;
+    }
+
+
+    /**
+     * Метод устанавливает новый статус посту, если статус найден. В противном случае возвращает старый статус.
+     */
+    private Post.ModerationStatus getModerationStatus(Post.ModerationStatus oldStatus, String strStatus) {
+        switch (strStatus) {
+            case "accept":
+                return Post.ModerationStatus.ACCEPTED;
+
+            case "decline":
+                return Post.ModerationStatus.DECLINED;
+
+            default:
+                return oldStatus;
         }
     }
+
 
     /**
      * Метод выводит только те посты, которые создал я (в соответствии с полем user_id в таблице posts базы данных).
@@ -293,6 +334,7 @@ public class PostService {
         return postCount;
     }
 
+
     /**
      * Метод выводит количества публикаций на каждую дату переданного в параметре year года или текущего года,
      * если параметр year не задан. В параметре years всегда возвращается список всех годов,
@@ -307,6 +349,7 @@ public class PostService {
         return new ResponseEntity<>(new CalendarResponse(years, posts), HttpStatus.OK);
     }
 
+
     /**
      * Преобразование к количеству и списку постов для отображения
      */
@@ -318,8 +361,7 @@ public class PostService {
                 .skip(offset)
                 .limit(limit)
                 .forEach(post -> {
-                    PostResponse postResponse = migrateToPostResponse(new PostResponse(), post);
-                    postsList.add(postResponse);
+                    postsList.add(migrateToPostResponse(new PostResponse(), post));
                 });
         return new PostCountResponse(count, postsList);
     }
@@ -330,15 +372,16 @@ public class PostService {
     private <T extends PostResponse>T migrateToPostResponse(T postResponse, Post post) {
         User author = post.getUser();
 
-        postResponse.setId(post.getId());
-        postResponse.setTime(timeService.timeToString(post.getTime()));
-        postResponse.setUser(new UserResponse(author.getId(), author.getName()));
-        postResponse.setTitle(post.getTitle());
-        postResponse.setAnnounce(textService.getAnnounce(post.getText()));
-        postResponse.setLikeCount(0);      // TODO реализовать
-        postResponse.setDislikeCount(0);   // TODO реализовать
-        postResponse.setCommentCount(post.getComments().size());
-        postResponse.setViewCount(post.getViewCount());
+        postResponse
+                .id(post.getId())
+                .time(timeService.timeToString(post.getTime()))
+                .user(new UserResponse(author.getId(), author.getName()))
+                .title(post.getTitle())
+                .announce(textService.getAnnounce(post.getText()))
+                .likeCount(0)      // TODO реализовать
+                .dislikeCount(0)   // TODO реализовать
+                .commentCount(post.getComments().size())
+                .viewCount(post.getViewCount());
 
         return postResponse;
     }
@@ -377,13 +420,13 @@ public class PostService {
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)
      */
-    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, TextLengthException {
+    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, NoSuchTextLengthException {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
         User user = userService.getUserFromSession();
-        Post post = postRepository.getPostById(commentRequest.getPostId())
+        Post post = postRepository.getFilteredPostById(commentRequest.getPostId())
                 .orElseThrow(() -> {
-                    String message = "Запрашиваемый пост с id = " + parentCommentId + " не существует";
+                    String message = "Запрашиваемый пост с id = " + parentCommentId + " не найден";
                     LOGGER.info(MARKER, message);
                     return new PostNotFoundException(message);
                 });
@@ -403,7 +446,6 @@ public class PostService {
         comment.setText(text);
         comment.setTime(timeService.getExpectedTime(LocalDateTime.now()));
         comment.setUserId(user);
-
         commentService.saveComment(comment);
 
         return new IdResponse(comment.getId());

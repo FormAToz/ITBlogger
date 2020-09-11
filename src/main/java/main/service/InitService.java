@@ -11,12 +11,12 @@ public class InitService {
      * а также номер телефона, e-mail и информацию об авторских правах для размещения в футере.
      */
     public InitResponse init() {
-        return new InitResponse(
-                "IT-Blogger",
-                "Рассказы разработчиков",
-                "+7 999 777-77-77",
-                "7.danilov@gmail.com",
-                "Андрей Данилов",
-                "2020");
+        return new InitResponse()
+                .title("IT-Blogger")
+                .subtitle("Рассказы разработчиков")
+                .phone("+7 999 777-77-77")
+                .email("7.danilov@gmail.com")
+                .copyright("Андрей Данилов")
+                .copyrightFrom("2020");
     }
 }

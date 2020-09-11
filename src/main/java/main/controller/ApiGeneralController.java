@@ -1,13 +1,15 @@
 package main.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mysql.cj.x.protobuf.Mysqlx;
 import main.api.request.CommentRequest;
+import main.api.request.ModerationRequest;
 import main.api.response.*;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
 import main.exception.PostNotFoundException;
-import main.exception.TextLengthException;
+import main.exception.NoSuchTextLengthException;
 import main.exception.UserNotFoundException;
 import main.service.*;
 import org.springframework.http.HttpStatus;
@@ -24,15 +26,13 @@ public class ApiGeneralController {
     private final InitService initService;
     private final ImageService imageService;
     private final PostService postService;
-    private final AuthorizationService authorizationService;
     private final UserService userService;
 
-    public ApiGeneralController(TagService tagService, InitService initService, ImageService imageService, PostService postService, AuthorizationService authorizationService, UserService userService) {
+    public ApiGeneralController(TagService tagService, InitService initService, ImageService imageService, PostService postService, UserService userService) {
         this.tagService = tagService;
         this.initService = initService;
         this.imageService = imageService;
         this.postService = postService;
-        this.authorizationService = authorizationService;
         this.userService = userService;
     }
 
@@ -81,20 +81,26 @@ public class ApiGeneralController {
         } catch (UserNotFoundException | PostNotFoundException e) {
             e.printStackTrace();
 
-        } catch (TextLengthException e) {
+        } catch (NoSuchTextLengthException e) {
             return new ResponseEntity<ErrorResultResponse>(
                     new ErrorResultResponse(
                             false,
-                            Map.of("text", "Текст комментария не задан или слишком короткий")), HttpStatus.OK);
+                            Map.of(e.getType(), "Текст комментария не задан или слишком короткий")), HttpStatus.OK);
         }
         return new ResponseEntity<IdResponse>(idResponse, HttpStatus.OK);
     }
 
     // Модерация поста
     @PostMapping("/moderation")
-    public ResponseEntity<ResultResponse> moderation(@JsonProperty("post_id") int postId, String decision) {
-        // TODO проверить данные с фронта
-        return postService.moderate(postId, decision);
+    public ResponseEntity<ResultResponse> moderation(@RequestBody ModerationRequest request) {
+        try {
+            postService.moderate(request.getPostId(), request.getDecision());
+        }
+        catch (UserNotFoundException | PostNotFoundException e) {
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
     }
 
     // Календарь (количество публикаций)
@@ -108,7 +114,7 @@ public class ApiGeneralController {
     @PostMapping("/profile/my")
     public ResponseEntity<ResultResponse> editMyProfile(/* TODO Разобраться с данными с фронта*/) {
         // TODO проверить параметры с фронта
-        return authorizationService.editMyProfile();
+        return userService.editMyProfile();
     }
 
     // Моя статистика

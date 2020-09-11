@@ -16,8 +16,8 @@ import java.util.Map;
 public class ErrorResultResponse extends ResultResponse{
     private final Map<String, String> errors;
 
-    public ErrorResultResponse(boolean result, Map errors) {
-        this.result = result;
+    public ErrorResultResponse(boolean result, Map<String, String> errors) {
+        super(result);
         this.errors = errors;
     }
 

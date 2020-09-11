@@ -49,20 +49,16 @@ public class CommentService {
         List<CommentResponse> commentList = new ArrayList<>();
 
         post.getComments().forEach(comment -> {
-            CommentResponse commentResponse = new CommentResponse();
-            User commentAuthor = comment.getUserId();
+            User author = comment.getUserId();
 
-            commentResponse.setId(comment.getId());
-            commentResponse.setTime(timeService.timeToString(comment.getTime()));
-            commentResponse.setText(comment.getText());
-            commentResponse.setUser(
-                    new UserResponse(
-                            commentAuthor.getId(),
-                            commentAuthor.getName(),
-                            commentAuthor.getPhoto())
+            commentList.add(
+                    new CommentResponse(
+                            comment.getId(),
+                            timeService.timeToString(comment.getTime()),
+                            comment.getText(),
+                            new UserResponse(author.getId(), author.getName(), author.getPhoto())
+                    )
             );
-
-            commentList.add(commentResponse);
         });
 
         return commentList;
