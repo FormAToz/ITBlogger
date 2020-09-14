@@ -1,17 +1,23 @@
 package main.controller;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.mysql.cj.x.protobuf.Mysqlx;
+import main.Main;
 import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
-import main.api.response.*;
+import main.api.response.CalendarResponse;
+import main.api.response.InitResponse;
+import main.api.response.SettingsResponse;
+import main.api.response.StatisticsResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
+import main.exception.InvalidParameterException;
 import main.exception.PostNotFoundException;
-import main.exception.NoSuchTextLengthException;
 import main.exception.UserNotFoundException;
 import main.service.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +28,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("api")
 public class ApiGeneralController {
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+
     private final TagService tagService;
     private final InitService initService;
     private final ImageService imageService;
@@ -73,21 +82,17 @@ public class ApiGeneralController {
     // Отправка комментария к посту
     @PostMapping("/comment")
     public ResponseEntity<?> comment(@RequestBody CommentRequest commentRequest) {
-        IdResponse idResponse = null;
-
         try {
-            idResponse = postService.addComment(commentRequest);
+            return new ResponseEntity<>(postService.addComment(commentRequest), HttpStatus.OK);
 
         } catch (UserNotFoundException | PostNotFoundException e) {
-            e.printStackTrace();
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.OK);
 
-        } catch (NoSuchTextLengthException e) {
-            return new ResponseEntity<ErrorResultResponse>(
-                    new ErrorResultResponse(
-                            false,
-                            Map.of(e.getType(), "Текст комментария не задан или слишком короткий")), HttpStatus.OK);
+        } catch (InvalidParameterException e) {
+            return new ResponseEntity<>(new ErrorResultResponse(false,
+                            Map.of(e.getType(), e.getMessage())), HttpStatus.OK);
         }
-        return new ResponseEntity<IdResponse>(idResponse, HttpStatus.OK);
     }
 
     // Модерация поста
@@ -97,6 +102,7 @@ public class ApiGeneralController {
             postService.moderate(request.getPostId(), request.getDecision());
         }
         catch (UserNotFoundException | PostNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
         }
 
@@ -120,7 +126,7 @@ public class ApiGeneralController {
     // Моя статистика
     @GetMapping("/statistics/my")
     public ResponseEntity<StatisticsResponse> myStatistics() {
-        return userService.getMyStatistics();
+        return new ResponseEntity<>(userService.getMyStatistics(), HttpStatus.OK);
     }
 
     // Статистика по всему блогу

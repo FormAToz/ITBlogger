@@ -43,7 +43,7 @@ public class VoteService {
         // TODO проверить случай повторного лайка и смену лайка на дизлайк в случае повтора.
         vote.setUser(user);
         vote.setPost(post);
-        vote.setTime(timeService.getExpectedTime(LocalDateTime.now()));
+        vote.setTime(LocalDateTime.now());
         vote.setValue((byte) 1);
         voteRepository.save(vote);
 

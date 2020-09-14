@@ -3,6 +3,7 @@ package main.service;
 import com.github.cage.Cage;
 import com.github.cage.GCage;
 import main.api.response.CaptchaResponse;
+import main.exception.InvalidParameterException;
 import main.model.CaptchaCode;
 import main.repository.CaptchaCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,10 +59,11 @@ public class CaptchaService {
      */
     public CaptchaResponse generateCaptcha() {
         // Удаляем устаревшие капчи
-//        deleteAllExpiredCaptcha();
+        deleteAllExpiredCaptcha();
 
         Cage cage = new GCage();
         String captcha = cage.getTokenGenerator().next();
+        String captchaSecret = Base64.getEncoder().encodeToString(captcha.getBytes());
         BufferedImage scaledImage = resizeImage(cage.drawImage(captcha), height, width);
 
         StringBuilder sb = new StringBuilder(imageUrl);
@@ -69,15 +71,23 @@ public class CaptchaService {
                 .append(Base64.getEncoder().encodeToString(imageToBytes(scaledImage)));
 
         CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setTime(timeService.getExpectedTime(LocalDateTime.now()));
+        captchaCode.setTime(LocalDateTime.now());
         captchaCode.setCode(captcha);
-        // TODO сделать генерацию кода и проверку капчи
-        captchaCode.setSecretCode(captcha);
+        captchaCode.setSecretCode(captchaSecret);
         captchaCodeRepository.save(captchaCode);
 
-        // FIXME проблема со временем(-+  3 часа)
-        System.out.println("Code^ " + captchaCodeRepository.findById(1).get().getTime());
-        return new CaptchaResponse(captcha, sb.toString());
+        return new CaptchaResponse(captchaSecret, sb.toString());
+    }
+
+    /**
+     * Метод удаления всех кодов с истекшим сроком действия
+     */
+    private void deleteAllExpiredCaptcha() {
+        List<CaptchaCode> codeList = captchaCodeRepository.findAllExpiredCodes(timeService.getNowMinusCaptchaExpirationTime());
+
+        if (!codeList.isEmpty()) {
+            captchaCodeRepository.deleteAll(codeList);
+        }
     }
 
     /**
@@ -111,13 +121,16 @@ public class CaptchaService {
     }
 
     /**
-     * Метод удаления всех кодов с истекшим сроком действия
+     * Метод проверки кода капчи
+     *
+     * @param captcha - код капчи, что пользователь ввел на фронте
      */
-    private void deleteAllExpiredCaptcha() {
-        List<CaptchaCode> codeList = captchaCodeRepository.findAllExpiredCodes(timeService.getExpiredTimeFromNow());
-        System.out.println("Expired^ " + timeService.getExpiredTimeFromNow());
-        if (!codeList.isEmpty()) {
-            captchaCodeRepository.deleteAll(codeList);
+    public void checkCaptcha(String captcha, String captchaSecret) throws InvalidParameterException {
+        CaptchaCode captchaCode = captchaCodeRepository.findBySecretCode(captchaSecret)
+                .orElseThrow(() -> new InvalidParameterException("captcha", "Срок действия секретного кода истек"));
+
+        if (!captchaCode.getCode().equals(captcha)) {
+            throw new InvalidParameterException("captcha", "Код с картинки введён неверно");
         }
     }
 }

@@ -13,8 +13,8 @@ import java.util.Optional;
 @Repository
 public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Integer> {
 
-    @Query(value = "from CaptchaCode c where c.time > ?1")
+    @Query(value = "from CaptchaCode c where c.time < ?1")
     List<CaptchaCode> findAllExpiredCodes(@Param("expTime") LocalDateTime expirationTime);
 
-    Optional<CaptchaCode> findByCode(String code);
+    Optional<CaptchaCode> findBySecretCode(String secretCode);
 }

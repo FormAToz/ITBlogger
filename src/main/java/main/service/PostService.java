@@ -12,7 +12,7 @@ import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
 import main.exception.PostNotFoundException;
-import main.exception.NoSuchTextLengthException;
+import main.exception.InvalidParameterException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
@@ -103,7 +103,7 @@ public class PostService {
      *
      * Пост должен сохраняться со статусом модерации NEW.
      */
-    public ResultResponse addPost(Post post) throws UserNotFoundException, NoSuchTextLengthException {
+    public ResultResponse addPost(Post post) throws UserNotFoundException, InvalidParameterException {
         User user = userService.getUserFromSession();
 
         textService.checkTitleAndTextLength(post.getTitle(), post.getText());
@@ -177,14 +177,10 @@ public class PostService {
     public PostFullResponse getPostResponseById(int id) throws UserNotFoundException, PostNotFoundException {
         User user = userService.getUserFromSession();
         Post post =
-                (userService.isNotModerator(user)   // пост не будет получен, если пользователь не модератор
-                        ? postRepository.getFilteredPostById(id)
-                        : postRepository.findById(id))
-                        .orElseThrow(() -> {
-                            String message = "Запрашиваемый пост с id = " + id + " не найден";
-                            LOGGER.info(MARKER, message);
-                            return new PostNotFoundException(message);
-                        });
+                (userService.isModerator(user)   // пост не будет получен, если пользователь не модератор
+                        ? postRepository.findById(id)
+                        : postRepository.getFilteredPostById(id))
+                        .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
 
         // TODO проверить изменение счетчика просмотров
         return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
@@ -210,7 +206,8 @@ public class PostService {
     private int incrementViews(User user, Post post) {
         int viewCount = post.getViewCount();
 
-        if (userService.isNotModerator(user) && userService.isNotAuthor(user, post)) {
+        // если пользователь не модератор и не автор
+        if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
             post.setViewCount(++viewCount);
             postRepository.save(post);
         }
@@ -278,7 +275,7 @@ public class PostService {
     public boolean moderate(int postId, String decision) throws UserNotFoundException, PostNotFoundException {
         User user = userService.getUserFromSession();
 
-        if (userService.isNotModerator(user)) {
+        if (!userService.isModerator(user)) {
             return false;
         }
 
@@ -420,16 +417,12 @@ public class PostService {
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)
      */
-    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, NoSuchTextLengthException {
+    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, InvalidParameterException {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
         User user = userService.getUserFromSession();
         Post post = postRepository.getFilteredPostById(commentRequest.getPostId())
-                .orElseThrow(() -> {
-                    String message = "Запрашиваемый пост с id = " + parentCommentId + " не найден";
-                    LOGGER.info(MARKER, message);
-                    return new PostNotFoundException(message);
-                });
+                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + parentCommentId + " не найден"));
         PostComment parentComment;
         PostComment comment = new PostComment();
 
@@ -444,7 +437,7 @@ public class PostService {
 
         comment.setPostId(post);
         comment.setText(text);
-        comment.setTime(timeService.getExpectedTime(LocalDateTime.now()));
+        comment.setTime(LocalDateTime.now());
         comment.setUserId(user);
         commentService.saveComment(comment);
 

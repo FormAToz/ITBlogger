@@ -1,14 +1,20 @@
 package main.controller;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import main.api.request.AuthorizationRequest;
+import main.Main;
+import main.api.request.auth.AuthorizationRequest;
+import main.api.request.auth.LoginRequest;
 import main.api.response.CaptchaResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
-import main.exception.NoSuchTextLengthException;
+import main.exception.InvalidParameterException;
+import main.exception.UserNotFoundException;
 import main.service.CaptchaService;
 import main.service.TextService;
 import main.service.UserService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +25,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("api/auth")
 public class ApiAuthController {
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+
     private final UserService userService;
     private final CaptchaService captchaService;
     private final TextService textService;
@@ -32,34 +41,37 @@ public class ApiAuthController {
     // Регистрация
     @PostMapping("/register")
     public ResponseEntity<ResultResponse> register(@RequestBody AuthorizationRequest authorizationRequest) {
-        ResultResponse resultResponse = null;
-
-        // TODO проверить параметры с фронта, статусы ответа в случае ошибки
-        System.out.printf("Registration:%n name: %s%n, code: %s%n, password: %s%n, captcha: %s%n, captcha_secret: %s%n",
-                authorizationRequest.getName(), authorizationRequest.getCode(), authorizationRequest.getPassword(),
-                authorizationRequest.getCaptcha(), authorizationRequest.getCaptchaSecret());
-
         try {
-            resultResponse = userService.register(authorizationRequest);
+           return new ResponseEntity<>(userService.register(authorizationRequest), HttpStatus.OK);
 
-        } catch (NoSuchTextLengthException e) {
+        } catch (InvalidParameterException e) {
             return new ResponseEntity<>(
                     new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.OK);
         }
-        return new ResponseEntity<>(resultResponse, HttpStatus.OK);
     }
 
     // Статус авторизации
     @GetMapping("/check")
     public ResponseEntity<ResultResponse> check(HttpServletRequest request) {
-        return userService.check(request);
+        try {
+            return new ResponseEntity<>(userService.check(), HttpStatus.OK);
+
+        } catch (UserNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
     }
 
     // Вход
     @PostMapping("/login")
-    public ResponseEntity<ResultResponse> logIn(@JsonProperty("e_mail") String eMail, String password, HttpServletRequest request) {
-        // TODO проверить параметры с фронта
-        return userService.logIn(eMail, password, request);
+    public ResponseEntity<ResultResponse> logIn(@RequestBody LoginRequest loginRequest) {
+        try {
+            return new ResponseEntity<>(userService.logIn(loginRequest), HttpStatus.OK);
+
+        } catch (UserNotFoundException | InvalidParameterException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
     }
 
     // Выход

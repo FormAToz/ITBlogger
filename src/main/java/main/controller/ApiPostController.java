@@ -1,16 +1,21 @@
 package main.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import main.Main;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.exception.PostNotFoundException;
-import main.exception.NoSuchTextLengthException;
+import main.exception.InvalidParameterException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.service.PostService;
 import main.service.VoteService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +25,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("api/post")
 public class ApiPostController {
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+
     private final PostService postService;
     private final VoteService voteService;
 
@@ -37,20 +45,17 @@ public class ApiPostController {
     // Добавление поста
     @PostMapping
     public ResponseEntity<ResultResponse> addPost(@RequestBody Post post) {
-        ResultResponse resultResponse = null;
-
         try {
-            resultResponse = postService.addPost(post);
+            return new ResponseEntity<>(postService.addPost(post), HttpStatus.OK);
 
         } catch (UserNotFoundException e) {
-            e.printStackTrace();
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.OK);
 
-        } catch (NoSuchTextLengthException e) {
+        } catch (InvalidParameterException e) {
             return new ResponseEntity<>(
-                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())),
-                    HttpStatus.BAD_REQUEST);
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(resultResponse, HttpStatus.OK);
     }
 
     // Поиск поста
@@ -62,16 +67,13 @@ public class ApiPostController {
     // Получение поста
     @GetMapping("/{id}")
     public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
-        PostFullResponse response = null;
-
         try {
-            response = postService.getPostResponseById(id);
+            return new ResponseEntity<>(postService.getPostResponseById(id), HttpStatus.OK);
         }
         catch (UserNotFoundException | PostNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-
-        return  new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     // Редактирование поста
@@ -107,16 +109,13 @@ public class ApiPostController {
     // Лайк поста
     @PostMapping("/like")
     public ResponseEntity<ResultResponse> likePost(@JsonProperty("post_id") int postId) {
-        ResultResponse resultResponse = null;
-
         try {
-            resultResponse = voteService.likePost(postId);
+            return new ResponseEntity<>(voteService.likePost(postId), HttpStatus.OK);
 
         } catch (PostNotFoundException | UserNotFoundException e) {
-            e.printStackTrace();
+            LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
         }
-        return new ResponseEntity<>(resultResponse, HttpStatus.OK);
     }
 
     // Дизлайк поста

@@ -1,4 +1,4 @@
-package main.api.request;
+package main.api.request.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -7,21 +7,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * {
  * 	"e_mail":"konstantin@mail.ru",
+ * 	"code":"b55ca6ea6cb103c6384c",
  * 	"password":"123456",
  * 	"name":"Константин",
  * 	"captcha":"d34f",
  * 	"captcha_secret":"69sdFd67df7Pd9d3"
  * }
  */
-public class AuthorizationRequest {
+public class AuthorizationRequest extends LoginRequest{
     private String name;
     private String code;
-    private String password;
     private String captcha;
     @JsonProperty("captcha_secret")
     private String captchaSecret;
 
     public AuthorizationRequest() {
+    }
+
+    public AuthorizationRequest email(String email) {
+        this.email = email;
+        return this;
+    }
+
+    public AuthorizationRequest password(String password) {
+        this.password = password;
+        return this;
     }
 
     public AuthorizationRequest name(String name) {
@@ -31,11 +41,6 @@ public class AuthorizationRequest {
 
     public AuthorizationRequest code(String code) {
         this.code = code;
-        return this;
-    }
-
-    public AuthorizationRequest password(String password) {
-        this.password = password;
         return this;
     }
 
@@ -55,10 +60,6 @@ public class AuthorizationRequest {
 
     public String getCode() {
         return code;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public String getCaptcha() {

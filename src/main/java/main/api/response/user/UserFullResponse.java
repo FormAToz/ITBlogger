@@ -22,12 +22,19 @@ public class UserFullResponse extends UserResponse {
     public UserFullResponse() {
     }
 
-    public UserFullResponse(int id, String name) {
-        super(id, name);
+    public UserFullResponse id(int id) {
+        this.id = id;
+        return this;
     }
 
-    public UserFullResponse(int id, String name, String photo) {
-        super(id, name, photo);
+    public UserFullResponse name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public UserFullResponse photo(String photo) {
+        this.photo = photo;
+        return this;
     }
 
     public UserFullResponse email(String email) {

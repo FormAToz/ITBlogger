@@ -25,12 +25,21 @@ public class TimeService {
         return DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm").format(actualTime.minusHours(3));
     }
 
-    public LocalDateTime getExpiredTimeFromNow() {
+    /**
+     * Метод вычисления времени истечения срока действия капчи.
+     *
+     * @return LocalDateTime: актуальное время минус срок действия капчи
+     */
+    public LocalDateTime getNowMinusCaptchaExpirationTime() {
         long now = LocalDateTime.now()
                 .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .getEpochSecond();
 
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(now + expirationTime), ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(now - expirationTime), ZoneId.systemDefault());
+    }
+
+    public LocalDateTime now(LocalDateTime time) {
+        return LocalDateTime.now().plusHours(3);
     }
 }
