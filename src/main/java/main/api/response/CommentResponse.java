@@ -5,7 +5,7 @@ import main.api.response.user.UserResponse;
 /**
  * {
  *     "id": 776,
- *     "time": "Вчера, 17:32",
+ *     "timestamp": 1592338706,
  *     "text": "Текст комментария в формате HTML",
  *     "user":
  *       {
@@ -17,13 +17,13 @@ import main.api.response.user.UserResponse;
  */
 public class CommentResponse {
     private final int id;
-    private final String time;
+    private final long timestamp;
     private final String text;
     private final UserResponse user;
 
-    public CommentResponse(int id, String time, String text, UserResponse user) {
+    public CommentResponse(int id, long timestamp, String text, UserResponse user) {
         this.id = id;
-        this.time = time;
+        this.timestamp = timestamp;
         this.text = text;
         this.user = user;
     }
@@ -32,8 +32,8 @@ public class CommentResponse {
         return id;
     }
 
-    public String getTime() {
-        return time;
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public String getText() {

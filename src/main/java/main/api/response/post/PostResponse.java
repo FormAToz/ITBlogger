@@ -6,7 +6,7 @@ import main.api.response.user.UserResponse;
  * Формат ответа:
  * {
  * 		"id": 345,
- * 		"time": "02 августа 2020, 22:34",
+ * 		"timestamp": 1592338706,
  * 		"user":
  *               {
  * 			"id": 88,
@@ -22,7 +22,7 @@ import main.api.response.user.UserResponse;
  */
 public class PostResponse {
     protected int id;
-    protected String time;
+    protected long timestamp;
     protected UserResponse user;
     protected String title;
     protected String announce;
@@ -39,8 +39,8 @@ public class PostResponse {
         return this;
     }
 
-    public PostResponse time(String time) {
-        this.time = time;
+    public PostResponse timestamp(long timestamp) {
+        this.timestamp = timestamp;
         return this;
     }
 
@@ -83,8 +83,8 @@ public class PostResponse {
         return id;
     }
 
-    public String getTime() {
-        return time;
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public UserResponse getUser() {

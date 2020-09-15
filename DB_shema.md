@@ -19,7 +19,7 @@
 | moderation_status | ENUM("NEW", "ACCEPTED", "DECLINED") NOT NULL | статус модерации, по умолчанию значение "NEW".           |
 | moderator_id      | INT                                          | ID пользователя-модератора, принявшего решение, или NULL |
 | user_id           | INT NOT NULL                                 | автор поста                                              |
-| time              | DATETIME NOT NULL                            | дата и время публикации поста                            |
+| timestamp              | DATETIME NOT NULL                            | дата и время публикации поста                            |
 | title             | VARCHAR(255) NOT NULL                        | заголовок поста                                          |
 | text              | TEXT NOT NULL                                | текст поста                                              |
 | view_count        | INT NOT NULL                                 | количество просмотров поста                              |
@@ -30,7 +30,7 @@
 | id      | INT NOT NULL AUTO_INCREMENT | id лайка/дизлайка                       |
 | user_id | INT NOT NULL                | тот, кто поставил лайк / дизлайк        |
 | post_id | INT NOT NULL                | пост, которому поставлен лайк / дизлайк |
-| time    | DATETIME NOT NULL           | дата и время лайка / дизлайка           |
+| timestamp    | DATETIME NOT NULL           | дата и время лайка / дизлайка           |
 | value   | TINYINT NOT NULL            | лайк или дизлайк: 1 или -1              |
 
 ## Таблица ```tags``` - тэги
@@ -53,14 +53,14 @@
 | parent_id | INT                         | комментарий, на который оставлен этот комментарий (может быть NULL, если комментарий оставлен просто к посту) |
 | post_id   | INT NOT NULL                | пост, к которому написан комментарий                                                                          |
 | user_id   | INT NOT NULL                | автор комментария                                                                                             |
-| time      | DATETIME NOT NULL           | дата и время комментария                                                                                      |
+| timestamp      | DATETIME NOT NULL           | дата и время комментария                                                                                      |
 | text      | TEXT NOT NULL               | текст комментария                                                                                             |
 
 ## Таблица ```captcha_codes``` - коды капч
 |name          |properties                    |description                            |
 |--------------|------------------------------|---------------------------------------|
 | id           | INT NOT NULL AUTO_INCREMENT  | id каптча                             |
-| time         | DATETIME NOT NULL            | дата и время генерации кода капчи     |
+| timestamp         | DATETIME NOT NULL            | дата и время генерации кода капчи     |
 | code         | TINYTEXT NOT NULL            | код, отображаемый на картинкке капчи  |
 | secret_code  | TINYTEXT NOT NULL            | код, передаваемый в параметре         |
 

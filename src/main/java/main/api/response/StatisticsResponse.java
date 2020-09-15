@@ -1,7 +1,5 @@
 package main.api.response;
 
-import java.time.LocalDateTime;
-
 /**
  * Формат ответа:
  *
@@ -10,7 +8,7 @@ import java.time.LocalDateTime;
  *  "likesCount": 15,
  *  "dislikesCount": 2,
  *  "viewsCount": 58,
- *  "firstPublication": "2018-07-16 17:35"
+ *  "firstPublication": 1590217200
  * }
  */
 public class StatisticsResponse {
@@ -18,7 +16,7 @@ public class StatisticsResponse {
     private int likesCount;
     private int dislikesCount;
     private int viewsCount;
-    private String firstPublication;
+    private long firstPublication;
 
     public StatisticsResponse() {
     }
@@ -43,7 +41,7 @@ public class StatisticsResponse {
         return this;
     }
 
-    public StatisticsResponse firstPublication(String firstPublication) {
+    public StatisticsResponse firstPublication(long firstPublication) {
         this.firstPublication = firstPublication;
         return this;
     }
@@ -64,7 +62,7 @@ public class StatisticsResponse {
         return viewsCount;
     }
 
-    public String getFirstPublication() {
+    public long getFirstPublication() {
         return firstPublication;
     }
 }

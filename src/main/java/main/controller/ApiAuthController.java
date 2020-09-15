@@ -6,9 +6,12 @@ import main.api.request.auth.LoginRequest;
 import main.api.response.CaptchaResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
+import main.exception.ApplicationException;
 import main.exception.InvalidParameterException;
+import main.exception.SettingNotFoundException;
 import main.exception.UserNotFoundException;
 import main.service.CaptchaService;
+import main.service.SettingsService;
 import main.service.TextService;
 import main.service.UserService;
 import org.apache.logging.log4j.LogManager;
@@ -30,19 +33,19 @@ public class ApiAuthController {
 
     private final UserService userService;
     private final CaptchaService captchaService;
-    private final TextService textService;
+    private final SettingsService settingsService;
 
-    public ApiAuthController(UserService userService, CaptchaService captchaService, TextService textService) {
+    public ApiAuthController(UserService userService, CaptchaService captchaService, SettingsService settingsService) {
         this.userService = userService;
         this.captchaService = captchaService;
-        this.textService = textService;
+        this.settingsService = settingsService;
     }
 
     // Регистрация
     @PostMapping("/register")
     public ResponseEntity<ResultResponse> register(@RequestBody AuthorizationRequest authorizationRequest) {
         try {
-           return new ResponseEntity<>(userService.register(authorizationRequest), HttpStatus.OK);
+            return new ResponseEntity<>(userService.register(authorizationRequest), HttpStatus.OK);
 
         } catch (InvalidParameterException e) {
             return new ResponseEntity<>(

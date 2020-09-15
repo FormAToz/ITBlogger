@@ -9,7 +9,7 @@ import java.util.List;
  *
  * {
  * 		"id": 345,
- * 		"time": "02 августа 2020, 22:34",
+ * 		"timestamp": "02 августа 2020, 22:34",
  * 	    "active": true,
  * 		"user":
  *          {
@@ -26,7 +26,7 @@ import java.util.List;
  *      "comments": [
  *          {
  *              "id": 776,
- *              "time": "Вчера, 17:32",
+ *              "timestamp": "Вчера, 17:32",
  *              "text": "Текст комментария в формате HTML",
  *              "user":
  *                  {

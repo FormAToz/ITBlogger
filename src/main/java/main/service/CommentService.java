@@ -54,7 +54,8 @@ public class CommentService {
             commentList.add(
                     new CommentResponse(
                             comment.getId(),
-                            timeService.timeToString(comment.getTime()),
+//                            timeService.timeToString(comment.getTime()), // TODO потом удалить
+                            comment.getTime().getNano(),
                             comment.getText(),
                             new UserResponse(author.getId(), author.getName(), author.getPhoto())
                     )

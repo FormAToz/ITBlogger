@@ -1,7 +1,5 @@
 package main.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -45,7 +43,6 @@ public class Post {
     private User user;
 
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime time;
 
     @NotNull

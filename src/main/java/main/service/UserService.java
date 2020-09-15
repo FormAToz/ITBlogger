@@ -8,7 +8,9 @@ import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.result.UserResultResponse;
 import main.api.response.user.UserFullResponse;
+import main.exception.ApplicationException;
 import main.exception.InvalidParameterException;
+import main.exception.SettingNotFoundException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.User;
@@ -261,6 +263,7 @@ public class UserService {
      * @param email - e-mail пользователя
      */
     public ResponseEntity<ResultResponse> restorePassword(String email) {
+        // TODO
         if (true) {
             return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
         }

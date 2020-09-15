@@ -10,7 +10,7 @@ import java.util.List;
  * 	"posts": [
  *                {
  * 			"id": 345,
- * 			"time": "02 августа 2020, 22:34",
+ * 			"timestamp": "02 августа 2020, 22:34",
  * 			"user":
  *                {
  * 				"id": 88,

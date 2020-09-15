@@ -2,6 +2,7 @@ package main.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import main.Main;
+import main.api.request.PostRequest;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
@@ -44,9 +45,9 @@ public class ApiPostController {
 
     // Добавление поста
     @PostMapping
-    public ResponseEntity<ResultResponse> addPost(@RequestBody Post post) {
+    public ResponseEntity<ResultResponse> addPost(@RequestBody PostRequest postRequest) {
         try {
-            return new ResponseEntity<>(postService.addPost(post), HttpStatus.OK);
+            return new ResponseEntity<>(postService.addPost(postRequest), HttpStatus.OK);
 
         } catch (UserNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());

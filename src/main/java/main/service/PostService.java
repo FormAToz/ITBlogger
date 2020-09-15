@@ -2,6 +2,7 @@ package main.service;
 
 import main.Main;
 import main.api.request.CommentRequest;
+import main.api.request.PostRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.IdResponse;
 import main.api.response.StatisticsResponse;
@@ -103,15 +104,19 @@ public class PostService {
      *
      * Пост должен сохраняться со статусом модерации NEW.
      */
-    public ResultResponse addPost(Post post) throws UserNotFoundException, InvalidParameterException {
+    public ResultResponse addPost(PostRequest request) throws UserNotFoundException, InvalidParameterException {
         User user = userService.getUserFromSession();
+        Post post = new Post();
 
-        textService.checkTitleAndTextLength(post.getTitle(), post.getText());
+        textService.checkTitleAndTextLength(request.getTitle(), request.getText());
 
+        post.setActive(request.getActive());
         post.setUser(user);
-        post.setTags(tagService.checkDuplicatesInRepo(post.getTags()));
-        post.setTime(timeService.getExpectedTime(post.getTime()));
+        post.setTags(tagService.checkDuplicatesInRepo(request.getTags()));
+        post.setTime(timeService.getExpectedTime(request.getTimestamp()));
         post.setModerationStatus(Post.ModerationStatus.NEW);
+        post.setTitle(request.getTitle());
+        post.setText(request.getText());
         post.setViewCount(0);
         postRepository.save(post);
 
@@ -371,7 +376,7 @@ public class PostService {
 
         postResponse
                 .id(post.getId())
-                .time(timeService.timeToString(post.getTime()))
+                .timestamp(timeService.getTimestampFromLocalDateTime(post.getTime()))
                 .user(new UserResponse(author.getId(), author.getName()))
                 .title(post.getTitle())
                 .announce(textService.getAnnounce(post.getText()))

@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class TimeService {
@@ -14,15 +13,37 @@ public class TimeService {
     @Value("${captcha.expiration-time}")
     private long expirationTime;
 
-    public LocalDateTime getExpectedTime(LocalDateTime actualTime) {
-        if (actualTime.isBefore(LocalDateTime.now())) {
-            actualTime = LocalDateTime.now();
+    /**
+     * Метод преобразует long в LocalDateTime. и если время меньше текущего, то оно становится текущим
+     *
+     * @param actualTime - timestamp в секундах
+     * @return LocalDateTime
+     */
+    public LocalDateTime getExpectedTime(long actualTime) {
+        LocalDateTime postTime = Instant.ofEpochSecond(actualTime).atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        if (postTime.isBefore(LocalDateTime.now())) {
+            postTime = LocalDateTime.now();
         }
-        return actualTime.plusHours(3);
+
+        return postTime;
     }
 
-    public String timeToString(LocalDateTime actualTime) {
-        return DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm").format(actualTime.minusHours(3));
+    /**
+     * Метод возвращает текущее время в секундах
+     * @return long - timestamp в секундах
+     */
+    public long getTimestampFromNow() {
+        return LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
+    }
+
+    /**
+     * Метод преобразования LocalDateTime в секунды
+     * @param localDateTime - время для преобразования
+     * @return - long, время в секундах
+     */
+    public long getTimestampFromLocalDateTime(LocalDateTime localDateTime) {
+        return localDateTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
     }
 
     /**
@@ -31,15 +52,7 @@ public class TimeService {
      * @return LocalDateTime: актуальное время минус срок действия капчи
      */
     public LocalDateTime getNowMinusCaptchaExpirationTime() {
-        long now = LocalDateTime.now()
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .getEpochSecond();
-
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(now - expirationTime), ZoneId.systemDefault());
-    }
-
-    public LocalDateTime now(LocalDateTime time) {
-        return LocalDateTime.now().plusHours(3);
+        return LocalDateTime
+                .ofInstant(Instant.ofEpochSecond(getTimestampFromNow() - expirationTime), ZoneId.systemDefault());
     }
 }
