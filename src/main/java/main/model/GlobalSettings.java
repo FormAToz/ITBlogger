@@ -30,6 +30,15 @@ public class GlobalSettings {
     @NotNull
     private String code, name, value;
 
+    public GlobalSettings() {
+    }
+
+    public GlobalSettings(@NotNull String code, @NotNull String name, @NotNull String value) {
+        this.code = code;
+        this.name = name;
+        this.value = value;
+    }
+
     public int getId() {
         return id;
     }

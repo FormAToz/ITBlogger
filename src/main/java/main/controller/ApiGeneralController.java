@@ -12,6 +12,7 @@ import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
 import main.exception.InvalidParameterException;
 import main.exception.PostNotFoundException;
+import main.exception.SettingNotFoundException;
 import main.exception.UserNotFoundException;
 import main.service.*;
 import org.apache.logging.log4j.LogManager;
@@ -32,44 +33,52 @@ public class ApiGeneralController {
     private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
 
     private final TagService tagService;
-    private final InitService initService;
     private final ImageService imageService;
     private final PostService postService;
     private final UserService userService;
+    private final SettingsService settingsService;
 
-    public ApiGeneralController(TagService tagService, InitService initService, ImageService imageService, PostService postService, UserService userService) {
+    public ApiGeneralController(TagService tagService, ImageService imageService, PostService postService, UserService userService, SettingsService settingsService) {
         this.tagService = tagService;
-        this.initService = initService;
         this.imageService = imageService;
         this.postService = postService;
         this.userService = userService;
+        this.settingsService = settingsService;
     }
 
     // Общие данные блога
     @GetMapping("/init")
     public ResponseEntity<InitResponse> init() {
-        return new ResponseEntity<>(initService.init(), HttpStatus.OK);
+        return new ResponseEntity<>(settingsService.init(), HttpStatus.OK);
     }
 
     // Получение настроек
     @GetMapping("/settings")
     public ResponseEntity<SettingsResponse> getSettings() {
-        // TODO modify? Метод возвращает глобальные настройки блога из таблицы global_settings.
-        SettingsResponse settings = new SettingsResponse(false, true, true);
-        return new ResponseEntity<>(settings, HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(settingsService.getSettings(), HttpStatus.OK);
+
+        } catch (SettingNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     // Сохранение настроек
-    @PostMapping("/settings")
-    public void saveSettings(SettingsResponse settingsResponse) {
-        // TODO modify? С фронта приходит реквест, а не респонс. Сохранить настройки в таблицу global_settings
-    }
+    @PutMapping("/settings")
+    public void saveSettings(@RequestBody SettingsResponse settingsResponse) {
+        try {
+            settingsService.saveSettings(settingsResponse);
 
+        } catch (SettingNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+        }
+    }
 
     // Получение списка тэгов
     @GetMapping("/tag")
     public ResponseEntity<TagListResponse> tags() {
-        return tagService.tags();
+        return new ResponseEntity<>(tagService.tags(), HttpStatus.OK);
     }
 
     // Загрузка изображений

@@ -63,7 +63,6 @@ public class UserService {
         userRepository.save(u);
     }
 
-
     /**
      * Метод получения пользователя из репозитория
      *
@@ -76,7 +75,6 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с id = " + id + " не найден"));
     }
 
-
     /**
      * Метод сохраняет отображение Id пользователя/Id сессии
      *
@@ -84,10 +82,8 @@ public class UserService {
      * @param sessionId - Id сессии
      */
     public void saveUserIdFromSession(int userId, String sessionId) {
-        userIdFromSession = new HashMap<>();
         userIdFromSession.put(sessionId, userId);
     }
-
 
     /**
      * Метод получения Id пользователя из сессии
@@ -105,7 +101,6 @@ public class UserService {
         return getUserById(userId);
     }
 
-
     /**
      * Метод проверки, является ли пользователь модератором
      * Модератор = 1. Не модератор = 0
@@ -117,7 +112,6 @@ public class UserService {
         return user.getIsModerator() == 1;
     }
 
-
     /**
      * Метод проверки, является ли пользователь автором
      * @param user - пользователь
@@ -127,7 +121,6 @@ public class UserService {
     public boolean isAuthor(User user, Post post) {
         return user.getId() == post.getUser().getId();
     }
-
 
     /**
      * Метод возвращает статистику постов текущего авторизованного пользователя:
@@ -254,9 +247,9 @@ public class UserService {
      * Метод разлогинивает пользователя: удаляет идентификатор его сессии из списка авторизованных.
      * Всегда возвращает true, даже если идентификатор текущей сессии не найден в списке авторизованных.
      */
-    public ResponseEntity<ResultResponse> logout() {
-        //TODO
-        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    public ResultResponse logout() {
+        userIdFromSession.clear();
+        return new ResultResponse(true);
     }
 
     /**

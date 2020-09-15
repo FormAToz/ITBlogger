@@ -1,16 +1,12 @@
 package main.service;
 
-import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
 import main.api.response.tag.TagResponse;
 import main.model.Post;
 import main.model.Tag;
-import main.repository.PostRepository;
 import main.repository.Tag2PostRepository;
 import main.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -34,13 +30,13 @@ public class TagService {
      * Значение 1 означает, что этот тэг встречается чаще всего.
      * weight вычисляется по формуле: кол-во вхождений тэга / количество вхождений самого популярного тэга
      */
-    public ResponseEntity<TagListResponse> tags() {
+    public TagListResponse tags() {
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();
 
         if (tagCountList.isEmpty()) {
-            return new ResponseEntity<>(new TagListResponse(new ArrayList<>()), HttpStatus.OK);
+            return new TagListResponse(new ArrayList<>());
         }
 
         // Первая запись - самый популярный тэг
@@ -58,7 +54,7 @@ public class TagService {
                 tags.add(new TagResponse(tagName, weight));
             }
         });
-        return new ResponseEntity<>(new TagListResponse(tags), HttpStatus.OK);
+        return new TagListResponse(tags);
     }
 
     /**

@@ -77,7 +77,7 @@ public class ApiAuthController {
     // Выход
     @GetMapping("/logout")
     public ResponseEntity<ResultResponse> logout() {
-        return userService.logout();
+        return new ResponseEntity<>(userService.logout(), HttpStatus.OK);
     }
 
     // Восстановление пароля
