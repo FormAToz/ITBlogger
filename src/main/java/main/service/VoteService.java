@@ -8,8 +8,6 @@ import main.model.PostVote;
 import main.model.User;
 import main.repository.PostVoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -36,7 +34,7 @@ public class VoteService {
      * @param postId - id поста которому ставим лайк
      */
     public ResultResponse likePost(int postId) throws PostNotFoundException, UserNotFoundException {
-        Post post = postService.getPostById(postId);
+        Post post = postService.getActiveAndAcceptedPostById(postId); // TODO проверить какой пост входит
         User user = userService.getUserFromSession();
         PostVote vote = new PostVote();
 

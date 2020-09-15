@@ -10,10 +10,7 @@ import main.api.response.StatisticsResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.tag.TagListResponse;
-import main.exception.InvalidParameterException;
-import main.exception.PostNotFoundException;
-import main.exception.SettingNotFoundException;
-import main.exception.UserNotFoundException;
+import main.exception.*;
 import main.service.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,7 +91,7 @@ public class ApiGeneralController {
         try {
             return new ResponseEntity<>(postService.addComment(commentRequest), HttpStatus.OK);
 
-        } catch (UserNotFoundException | PostNotFoundException e) {
+        } catch (UserNotFoundException | PostNotFoundException | CommentNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(HttpStatus.OK);
 

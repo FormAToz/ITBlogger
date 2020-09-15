@@ -79,8 +79,18 @@ public class ApiPostController {
 
     // Редактирование поста
     @PutMapping("/{id}")
-    public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody Post post) {
-        return new ResponseEntity<>(postService.updatePost(id, post), HttpStatus.OK);
+    public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody PostRequest postRequest) {
+        try {
+            return new ResponseEntity<>(postService.updatePost(id, postRequest), HttpStatus.OK);
+
+        } catch (PostNotFoundException | UserNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.NOT_FOUND);
+
+        } catch (InvalidParameterException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.OK);
+        }
     }
 
     // Список постов за указанную дату
@@ -101,10 +111,16 @@ public class ApiPostController {
         return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
-    // Список моих постов
+    // Список постов авторизированного пользователя
     @GetMapping("/my")
     public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
-        return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
+
+        } catch (UserNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     // Лайк поста

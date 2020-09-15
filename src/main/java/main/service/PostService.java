@@ -9,9 +9,9 @@ import main.api.response.StatisticsResponse;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.post.PostResponse;
-import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
+import main.exception.CommentNotFoundException;
 import main.exception.PostNotFoundException;
 import main.exception.InvalidParameterException;
 import main.exception.UserNotFoundException;
@@ -49,9 +49,28 @@ public class PostService {
     @Autowired
     private CommentService commentService;
 
-    public Post getPostById(int id) throws PostNotFoundException {
-        return postRepository.getFilteredPostById(id)
-                .orElseThrow(() -> new PostNotFoundException("Пост не найден"));
+    /**
+     * Метод получает любой пост из репозитория по id
+     *
+     * @param id - id поста
+     * @return Post
+     * @throws PostNotFoundException в случае, если пост не найден
+     */
+    public Post getById(int id) throws PostNotFoundException {
+        return postRepository.findById(id)
+                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
+    }
+
+    /**
+     * Метод получает не скрытый пост, со статусом ACCEPTED из репозитория по id
+     *
+     * @param id - id поста
+     * @return  Post
+     * @throws PostNotFoundException в случае, если пост не найден
+     */
+    public Post getActiveAndAcceptedPostById(int id) throws PostNotFoundException {
+        return postRepository.findFilteredPostById(id)
+                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
     }
 
     /**
@@ -97,7 +116,7 @@ public class PostService {
     }
 
     /**
-     * Добавление поста
+     * Метод добавления нового поста
      *
      * Метод отправляет данные поста, которые пользователь ввёл в форму публикации. В случае, если заголовок
      * или текст поста не установлены и/или слишком короткие, метод должен выводить ошибку и не добавлять пост.
@@ -109,7 +128,6 @@ public class PostService {
         Post post = new Post();
 
         textService.checkTitleAndTextLength(request.getTitle(), request.getText());
-
         post.setActive(request.getActive());
         post.setUser(user);
         post.setTags(tagService.checkDuplicatesInRepo(request.getTags()));
@@ -138,29 +156,39 @@ public class PostService {
      * если его изменил модератор.
      *
      * @param id - id поста
-     * @param post:
+     * @param postRequest:
      *          timestamp - дата и время публикации в формате UTC
      *          active - 1 или 0, открыть пост или скрыть
      *          title - заголовок поста
      *          text - текст поста в формате HTML
      *          tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
      */
-    public ResultResponse updatePost(int id, Post post) {
-        if (true) {
-            // TODO пост обновлен
+    public ResultResponse updatePost(int id, PostRequest postRequest)
+            throws PostNotFoundException, InvalidParameterException, UserNotFoundException {
+        Post post = getById(id);
+        User user = userService.getUserFromSession();
 
-            return new ResultResponse(true);
-        }
-        else {
-            // TODO в случае ошибки
-            Map<String, String> errors = new HashMap<>();
+        textService.checkTitleAndTextLength(postRequest.getTitle(), postRequest.getText());
 
-            return new ErrorResultResponse(false, errors);
+        if (userService.isModerator(user)) {
+            post.setModeratorId(user.getId());      // если модератор, меняем id модератора
+        } else {
+            post.setModerationStatus(Post.ModerationStatus.NEW);        // иначе меняем статус
         }
+
+        post.setTime(timeService.getExpectedTime(postRequest.getTimestamp()));
+        post.setActive(postRequest.getActive());
+        post.setTitle(postRequest.getTitle());
+        post.setText(postRequest.getText());
+        post.setTags(tagService.checkDuplicatesInRepo(postRequest.getTags()));
+        postRepository.save(post);
+
+        return new ResultResponse(true);
     }
 
     /**
-     * Поиск постов
+     * Метод поиска постов по запросу
+     *
      * Метод возвращает посты, соответствующие поисковому запросу - строке query.
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести
@@ -172,7 +200,7 @@ public class PostService {
     }
 
     /**
-     * Получение поста
+     * Метод получения поста по id
      *
      * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
      * список комментариев и тэгов, привязанных к данному посту.
@@ -181,13 +209,10 @@ public class PostService {
      */
     public PostFullResponse getPostResponseById(int id) throws UserNotFoundException, PostNotFoundException {
         User user = userService.getUserFromSession();
-        Post post =
-                (userService.isModerator(user)   // пост не будет получен, если пользователь не модератор
-                        ? postRepository.findById(id)
-                        : postRepository.getFilteredPostById(id))
-                        .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
+        Post post = (userService.isModerator(user)   // пост не будет получен, если пользователь не модератор
+                        ? getById(id)
+                        : getActiveAndAcceptedPostById(id));
 
-        // TODO проверить изменение счетчика просмотров
         return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
                 .active(isActive(post))
                 .text(post.getText())
@@ -198,6 +223,8 @@ public class PostService {
 
 
     /**
+     * Метод проверки отображения поста.
+     *
      * true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
      */
     private boolean isActive(Post post) {
@@ -221,7 +248,7 @@ public class PostService {
 
 
     /**
-     * Список постов за указанную дату
+     * Метод получения списка постов за указанную дату
      * Выводит посты за указанную дату, переданную в запросе в параметре date.
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
@@ -234,7 +261,7 @@ public class PostService {
 
 
     /**
-     * Список постов по тэгу
+     * Метод получения списка постов по тэгу
      * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
      * @param offset  - сдвиг от 0 для постраничного вывода
      * @param limit   - количество постов, которое надо вывести (10)
@@ -284,12 +311,7 @@ public class PostService {
             return false;
         }
 
-        Post post = postRepository.findById(postId).orElseThrow(() -> {
-                            String message = "Запрашиваемый пост с id = " + postId + " не найден";
-                            LOGGER.info(MARKER, message);
-                            return new PostNotFoundException(message);
-                        });
-
+        Post post = getById(postId);
         post.setModeratorId(user.getId());
         post.setModerationStatus(getModerationStatus(post.getModerationStatus(), decision));
         postRepository.save(post);
@@ -319,7 +341,8 @@ public class PostService {
 
 
     /**
-     * Метод выводит только те посты, которые создал я (в соответствии с полем user_id в таблице posts базы данных).
+     * Метод получения списка постов авторизированного юзера (в соответствии с полем user_id в таблице posts базы данных).
+     *
      * Возможны 4 типа вывода (см. ниже описания значений параметра status).
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit - количество постов, которое надо вывести
@@ -329,11 +352,28 @@ public class PostService {
      *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
      *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
-    public PostCountResponse getMyPosts(int offset, int limit, String status) {
-        // TODO
-        PostCountResponse postCount = null;
+    public PostCountResponse getMyPosts(int offset, int limit, String status) throws UserNotFoundException {
+        User user = userService.getUserFromSession();
+        List<Post> list = new ArrayList<>();
 
-        return postCount;
+        switch (status) {
+            case "inactive":
+                list = postRepository.findByUserAndActive(user, 0);
+                break;
+
+            case "pending":
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.NEW);
+                break;
+
+            case "declined":
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.DECLINED);
+                break;
+
+            case "published":
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.ACCEPTED);
+                break;
+        }
+        return countPosts(list, offset, limit);
     }
 
 
@@ -353,7 +393,7 @@ public class PostService {
 
 
     /**
-     * Преобразование к количеству и списку постов для отображения
+     * Метод преобразования к количеству и списку постов для отображения
      */
     private PostCountResponse countPosts(List<Post> list, int offset, int limit) {
         List<PostResponse> postsList = new ArrayList<>();
@@ -369,7 +409,7 @@ public class PostService {
     }
 
     /**
-     * Преобразование post -> postResponse
+     * Метод преобразования post -> postResponse
      */
     private <T extends PostResponse>T migrateToPostResponse(T postResponse, Post post) {
         User author = post.getUser();
@@ -422,12 +462,12 @@ public class PostService {
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)
      */
-    public IdResponse addComment(CommentRequest commentRequest) throws UserNotFoundException, PostNotFoundException, InvalidParameterException {
+    public IdResponse addComment(CommentRequest commentRequest)
+            throws UserNotFoundException, PostNotFoundException, InvalidParameterException, CommentNotFoundException {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
         User user = userService.getUserFromSession();
-        Post post = postRepository.getFilteredPostById(commentRequest.getPostId())
-                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + parentCommentId + " не найден"));
+        Post post = getActiveAndAcceptedPostById(commentRequest.getPostId());
         PostComment parentComment;
         PostComment comment = new PostComment();
 

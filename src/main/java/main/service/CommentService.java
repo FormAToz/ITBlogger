@@ -3,6 +3,7 @@ package main.service;
 import main.Main;
 import main.api.response.CommentResponse;
 import main.api.response.user.UserResponse;
+import main.exception.CommentNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CommentService {
@@ -28,22 +28,29 @@ public class CommentService {
     @Autowired
     private TimeService timeService;
 
-    public PostComment getCommentById(int id) {
-        Optional comment = commentRepository.findById(id);
-
-        if (!comment.isPresent()) {
-            LOGGER.info(MARKER, "Комментарий с id={} не найден", id);
-            return null;
-        }
-        return (PostComment) comment.get();
+    /**
+     * Метод получения комментария по id
+     *
+     * @param id - id комментария
+     * @return PostComment
+     * @throws CommentNotFoundException в случае, если комментарий не найден
+     */
+    public PostComment getCommentById(int id) throws CommentNotFoundException {
+        return commentRepository.findById(id)
+                .orElseThrow(() -> new CommentNotFoundException("Комментарий с id = " + id + " не найден"));
     }
 
+    /**
+     * Метод сохранения комментария в репозиторий
+     *
+     * @param comment - сохраняемы комментарий
+     */
     public void saveComment(PostComment comment) {
         commentRepository.save(comment);
     }
 
     /**
-     * Преобразование post -> List<CommentResponse>
+     * Метод преобразования post -> List<CommentResponse>
      */
     public List<CommentResponse> migrateToCommentResponse(Post post) {
         List<CommentResponse> commentList = new ArrayList<>();
@@ -54,14 +61,12 @@ public class CommentService {
             commentList.add(
                     new CommentResponse(
                             comment.getId(),
-//                            timeService.timeToString(comment.getTime()), // TODO потом удалить
-                            comment.getTime().getNano(),
+                            timeService.getTimestampFromLocalDateTime(comment.getTime()),
                             comment.getText(),
                             new UserResponse(author.getId(), author.getName(), author.getPhoto())
                     )
             );
         });
-
         return commentList;
     }
 }

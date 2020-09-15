@@ -1,6 +1,7 @@
 package main.repository;
 
 import main.model.Post;
+import main.model.User;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -30,7 +31,7 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     List<Post> findFilteredPostsByQuery(@Param("query") String query);
 
     @Query(value = "from Post p " + POST_DISPLAY_FILTER + " and p.id = ?1")
-    Optional<Post> getFilteredPostById(@Param("id") int id);
+    Optional<Post> findFilteredPostById(@Param("id") int id);
 
     @Query("from Post p join Tag2Post t2p on t2p.postId = p.id join Tag t on t2p.tagId = t.id " + POST_DISPLAY_FILTER + " and t.name like ?1")
     List<Post> findFilteredPostsByTag(@Param("tagName") String tagName);
@@ -44,6 +45,16 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     /**
      * Поиск всех нескрытых постов по статусу модерации
      */
-    @Query(ACTIVE_POSTS_FILTER + " and lower(p.moderationStatus) = lower(?1)")
+    @Query(ACTIVE_POSTS_FILTER + " and lower(p.moderationStatus) = lower(?1) order by p.time")
     List<Post> findAllPostsForModerationByStatus(@Param("status") String status);
+
+    /**
+     * Метод поиска постов по id и active
+     */
+    List<Post> findByUserAndActive(User user, int active);
+
+    /**
+     * Метод поиска постов по id, active и moderation_status
+     */
+    List<Post> findByUserAndActiveAndModerationStatus(User user, int active, Post.ModerationStatus moderationStatus);
 }
