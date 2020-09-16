@@ -144,6 +144,42 @@ public class PostService {
         return new ResultResponse(true);
     }
 
+
+    /**
+     * Метод поиска постов по запросу
+     *
+     * Метод возвращает посты, соответствующие поисковому запросу - строке query.
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести
+     * @param query  - поисковый запрос
+     */
+    public PostCountResponse searchPosts(int offset, int limit, String query) {
+        List<Post> foundedPosts = postRepository.findFilteredPostsByQuery(query);
+        return countPosts(foundedPosts, offset, limit);
+    }
+
+
+    /**
+     * Метод получения поста по id
+     *
+     * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
+     * список комментариев и тэгов, привязанных к данному посту.
+     *
+     * @param id - id поста
+     */
+    public PostFullResponse getPostById(int id) throws UserNotFoundException, PostNotFoundException {
+        User user = userService.getUserFromSession();
+        Post post = getById(id);
+
+        return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
+                .active(isActive(post))
+                .text(post.getText())
+                .comments(commentService.migrateToCommentResponse(post))
+                .tags(tagService.migrateToListTagName(post))
+                .viewCount(incrementViews(user, post));
+    }
+
+
     /**
      * Метод изменяет данные поста с идентификатором ID на те, которые пользователь ввёл в форму публикации.
      * В случае, если заголовок или текст поста не установлены и/или слишком короткие (короче 3 и 50 символов соответственно),
@@ -186,41 +222,6 @@ public class PostService {
         return new ResultResponse(true);
     }
 
-    /**
-     * Метод поиска постов по запросу
-     *
-     * Метод возвращает посты, соответствующие поисковому запросу - строке query.
-     * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit  - количество постов, которое надо вывести
-     * @param query  - поисковый запрос
-     */
-    public PostCountResponse searchPosts(int offset, int limit, String query) {
-        List<Post> foundedPosts = postRepository.findFilteredPostsByQuery(query);
-        return countPosts(foundedPosts, offset, limit);
-    }
-
-    /**
-     * Метод получения поста по id
-     *
-     * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
-     * список комментариев и тэгов, привязанных к данному посту.
-     *
-     * @param id - id поста
-     */
-    public PostFullResponse getPostResponseById(int id) throws UserNotFoundException, PostNotFoundException {
-        User user = userService.getUserFromSession();
-        Post post = (userService.isModerator(user)   // пост не будет получен, если пользователь не модератор
-                        ? getById(id)
-                        : getActiveAndAcceptedPostById(id));
-
-        return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
-                .active(isActive(post))
-                .text(post.getText())
-                .comments(commentService.migrateToCommentResponse(post))
-                .tags(tagService.migrateToListTagName(post))
-                .viewCount(incrementViews(user, post));
-    }
-
 
     /**
      * Метод проверки отображения поста.
@@ -244,19 +245,6 @@ public class PostService {
             postRepository.save(post);
         }
         return viewCount;
-    }
-
-
-    /**
-     * Метод получения списка постов за указанную дату
-     * Выводит посты за указанную дату, переданную в запросе в параметре date.
-     * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit  - количество постов, которое надо вывести (10)
-     * @param date   - дата в формате "2019-10-15"
-     */
-    public PostCountResponse getPostsByDate(int offset, int limit, String date) {
-        // TODO проверить дату и реализовать вывод по указанной дате
-        return countPosts(postRepository.findAllFilteredPosts(), offset, limit);
     }
 
 
@@ -292,7 +280,7 @@ public class PostService {
      * Метод подсчета всех постов, ожидающих модерации
      */
     public int countPostsForModeration() {
-        return postRepository.findAllPostsForModeration().size();
+        return postRepository.countAllPostsForModeration();
     }
 
 
@@ -382,13 +370,40 @@ public class PostService {
      * если параметр year не задан. В параметре years всегда возвращается список всех годов,
      * за которые была хотя бы одна публикация, в порядке возврастания.
      *
+     * Считаются только активные посты(поле is_active в таблице posts равно 1),
+     * утверждённые модератором (поле moderation_status равно ACCEPTED),
+     * с датой публикации не позднее текущего момента.
+     *
      * @param year - год в виде четырёхзначного числа, если не передан - возвращать за текущий год
      */
-    public ResponseEntity<CalendarResponse> getAllPostsForCalendar(int year) {
-        // TODO
-        List<Integer> years = new ArrayList<>();
-        Map<String, Integer> posts = new HashMap<>();
-        return new ResponseEntity<>(new CalendarResponse(years, posts), HttpStatus.OK);
+    public CalendarResponse getAllPostsForCalendar(int year) {
+        List<Integer> years = postRepository.findAllPostsByYears();
+        List<Object[]> allRecordsByYearFromRepo = postRepository.getAllRecordsByYear(year);
+        Map<String, Long> allRecordsByYear = new HashMap<>();
+
+        if (year == 0) {
+            year = LocalDateTime.now().getYear();
+        }
+
+        allRecordsByYearFromRepo.forEach(el -> {
+            String date = (String) el[0];   // date - "2019-12-17"
+            long count = (long) el[1];      // count of date - 34
+            allRecordsByYear.put(date, count);
+        });
+
+        return new CalendarResponse(years, allRecordsByYear);
+    }
+
+
+    /**
+     * Метод получения списка постов за указанную дату
+     * Выводит посты за указанную дату, переданную в запросе в параметре date.
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести (10)
+     * @param date   - дата в формате "2019-10-15"
+     */
+    public PostCountResponse getPostsByDate(int offset, int limit, String date) {
+        return countPosts(postRepository.getPostsByDate(date), offset, limit);
     }
 
 
@@ -407,6 +422,7 @@ public class PostService {
                 });
         return new PostCountResponse(count, postsList);
     }
+
 
     /**
      * Метод преобразования post -> postResponse
@@ -428,6 +444,7 @@ public class PostService {
         return postResponse;
     }
 
+
     /**
      * Метод выдаёт статистику по всем постам блога. В случае, если публичный показ статистики блога запрещён
      * (см. соответствующий параметр в global_settings) и текущий пользователь не модератор, должна выдаваться ошибка 401.
@@ -436,6 +453,7 @@ public class PostService {
         // TODO реализовать
         return new ResponseEntity<>(new StatisticsResponse(), HttpStatus.OK);
     }
+
 
     /**
      * Метод добавляет комментарий к посту. Должны проверяться все три параметра.

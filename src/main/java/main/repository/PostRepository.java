@@ -39,8 +39,8 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
     /**
      * Поиск всех не скрытых постов на модерацию
      */
-    @Query(ACTIVE_POSTS_FILTER + " and p.moderationStatus != 'ACCEPTED'")
-    List<Post> findAllPostsForModeration();
+    @Query("select count(*)" + ACTIVE_POSTS_FILTER + " and p.moderationStatus != 'ACCEPTED'")
+    int countAllPostsForModeration();
 
     /**
      * Поиск всех нескрытых постов по статусу модерации
@@ -57,4 +57,28 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
      * Метод поиска постов по id, active и moderation_status
      */
     List<Post> findByUserAndActiveAndModerationStatus(User user, int active, Post.ModerationStatus moderationStatus);
+
+    /**
+     * Метод группировки публикации постов по годам
+     */
+    @Query(value = "select year(p.time) as years from Post p " + POST_DISPLAY_FILTER + " group by years order by years desc")
+    List<Integer> findAllPostsByYears();
+
+    /**
+     * Метод поиска количества постов за год.
+     * Отображение - дата/кол-во постов
+     *
+     * @param year - год, в котором посты были опубликованы
+     */
+    @Query(value = "select date_format(p.time, '%Y-%m-%d') as date_format, count(time) " +
+            "from Post p " + POST_DISPLAY_FILTER + " and year(p.time) = ?1 group by date_format order by date_format")
+    List<Object[]> getAllRecordsByYear(@Param("year")int year);
+
+    /**
+     * Метод поиска всех постов за указанную дату
+     *
+     * @param date - искомая дата
+     */
+    @Query(value = "from Post p " + POST_DISPLAY_FILTER + " and date_format(p.time, '%Y-%m-%d') = ?1")
+    List<Post> getPostsByDate(@Param("date") String date);
 }

@@ -18,9 +18,9 @@ import java.util.Map;
  */
 public class CalendarResponse {
     private final List<Integer> years;
-    private final Map<String, Integer> posts;
+    private final Map<String, Long> posts;
 
-    public CalendarResponse(List<Integer> years, Map<String, Integer> posts) {
+    public CalendarResponse(List<Integer> years, Map<String, Long> posts) {
         this.years = years;
         this.posts = posts;
     }
@@ -29,7 +29,7 @@ public class CalendarResponse {
         return years;
     }
 
-    public Map<String, Integer> getPosts() {
+    public Map<String, Long> getPosts() {
         return posts;
     }
 }

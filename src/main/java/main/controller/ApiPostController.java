@@ -10,7 +10,6 @@ import main.api.response.result.ResultResponse;
 import main.exception.PostNotFoundException;
 import main.exception.InvalidParameterException;
 import main.exception.UserNotFoundException;
-import main.model.Post;
 import main.service.PostService;
 import main.service.VoteService;
 import org.apache.logging.log4j.LogManager;
@@ -69,7 +68,7 @@ public class ApiPostController {
     @GetMapping("/{id}")
     public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
         try {
-            return new ResponseEntity<>(postService.getPostResponseById(id), HttpStatus.OK);
+            return new ResponseEntity<>(postService.getPostById(id), HttpStatus.OK);
         }
         catch (UserNotFoundException | PostNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());

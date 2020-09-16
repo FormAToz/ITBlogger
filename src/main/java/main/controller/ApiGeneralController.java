@@ -118,8 +118,7 @@ public class ApiGeneralController {
     // Календарь (количество публикаций)
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> calendar(int year) {
-        // TODO проверить данные с фронта
-        return postService.getAllPostsForCalendar(year);
+        return new ResponseEntity<>(postService.getAllPostsForCalendar(year), HttpStatus.OK);
     }
 
     // Редактирование моего профиля
