@@ -48,6 +48,8 @@ public class PostService {
     private TimeService timeService;
     @Autowired
     private CommentService commentService;
+    @Autowired
+    private VoteService voteService;
 
     /**
      * Метод получает любой пост из репозитория по id
@@ -436,8 +438,8 @@ public class PostService {
                 .user(new UserResponse(author.getId(), author.getName()))
                 .title(post.getTitle())
                 .announce(textService.getAnnounce(post.getText()))
-                .likeCount(0)      // TODO реализовать
-                .dislikeCount(0)   // TODO реализовать
+                .likeCount(voteService.countLikesFromPost(post))
+                .dislikeCount(voteService.countDislikesFromPost(post))
                 .commentCount(post.getComments().size())
                 .viewCount(post.getViewCount());
 

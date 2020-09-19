@@ -3,6 +3,7 @@ package main.controller;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import main.Main;
 import main.api.request.PostRequest;
+import main.api.request.VoteRequest;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
@@ -124,9 +125,9 @@ public class ApiPostController {
 
     // Лайк поста
     @PostMapping("/like")
-    public ResponseEntity<ResultResponse> likePost(@JsonProperty("post_id") int postId) {
+    public ResponseEntity<ResultResponse> likePost(@RequestBody VoteRequest voteRequest) {
         try {
-            return new ResponseEntity<>(voteService.likePost(postId), HttpStatus.OK);
+            return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
 
         } catch (PostNotFoundException | UserNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());
@@ -136,7 +137,13 @@ public class ApiPostController {
 
     // Дизлайк поста
     @PostMapping("/dislike")
-    public ResponseEntity<ResultResponse> dislikePost(@JsonProperty("post_id") int postId) {
-        return new ResponseEntity<>(voteService.dislikePost(postId), HttpStatus.OK);
+    public ResponseEntity<ResultResponse> dislikePost(@RequestBody VoteRequest voteRequest) {
+        try {
+            return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);
+
+        } catch (PostNotFoundException | UserNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
     }
 }

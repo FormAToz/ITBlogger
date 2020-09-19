@@ -6,18 +6,21 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: update
-
   datasource:
     url: jdbc:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC
     username: root
     password: testformat
 
-#Captcha properties
+#Captcha service properties
 captcha:
   expiration-time: 3600 #seconds
-
   image:
     url: data:image/png;base64
     height: 35
     width: 100
     format: png
+
+#like service properties
+vote:
+  like-value: 1
+  dislike-value: -1

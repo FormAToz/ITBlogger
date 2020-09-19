@@ -8,6 +8,7 @@ import main.model.PostVote;
 import main.model.User;
 import main.repository.PostVoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,14 +18,17 @@ import java.time.LocalDateTime;
  */
 @Service
 public class VoteService {
+    @Value("${vote.like-value}")
+    private byte likeValue;
+    @Value("${vote.dislike-value}")
+    private byte dislikeValue;
+
     @Autowired
     private PostVoteRepository voteRepository;
     @Autowired
     private PostService postService;
     @Autowired
     private UserService userService;
-    @Autowired
-    private TimeService timeService;
 
     /**
      * Метод сохраняет в таблицу post_votes лайк текущего авторизованного пользователя.
@@ -34,18 +38,7 @@ public class VoteService {
      * @param postId - id поста которому ставим лайк
      */
     public ResultResponse likePost(int postId) throws PostNotFoundException, UserNotFoundException {
-        Post post = postService.getActiveAndAcceptedPostById(postId); // TODO проверить какой пост входит
-        User user = userService.getUserFromSession();
-        PostVote vote = new PostVote();
-
-        // TODO проверить случай повторного лайка и смену лайка на дизлайк в случае повтора.
-        vote.setUser(user);
-        vote.setPost(post);
-        vote.setTime(LocalDateTime.now());
-        vote.setValue((byte) 1);
-        voteRepository.save(vote);
-
-        return new ResultResponse(true);
+        return new ResultResponse(updateVote(likeValue, postId));
     }
 
     /**
@@ -55,13 +48,55 @@ public class VoteService {
      * Если до этого этот же пользователь поставил на этот же пост лайк, этот лайк должен заменен на дизлайк в базе данных.
      * @param postId - id поста
      */
-    public ResultResponse dislikePost(int postId) {
-        if (true) {
-            //TODO
-            return new ResultResponse(true);
+    public ResultResponse dislikePost(int postId) throws PostNotFoundException, UserNotFoundException {
+        return new ResultResponse(updateVote(dislikeValue, postId));
+    }
+
+    /**
+     * Метод создает новую запись, если лайка/дизлайка на пост не было.
+     * Если лайк был, но пришел дизлайк, то меняем запись на дизлайк и наоборот.
+     *
+     * @param voteValue - значение лайка/дизлайка
+     * @param postId - id поста, которому ставится лайк/дизлайк
+     * @return  В случае повторного лайка/дизлайка - возвращаем false, иначе true
+     * @throws PostNotFoundException в случае, если пост не найден
+     * @throws UserNotFoundException в случае, если пользователь не найден
+     */
+    private boolean updateVote(byte voteValue, int postId) throws PostNotFoundException, UserNotFoundException {
+        Post post = postService.getActiveAndAcceptedPostById(postId);
+        User user = userService.getUserFromSession();
+        PostVote vote = voteRepository.findByUserAndPost(user, post).orElse(new PostVote());
+
+        // FIXME лайк/дизлайк ставится кривовато при переходе  главной на получение поста
+        if (vote.getValue() == voteValue) {     // Если лайк/дизлайк уже был
+            return false;
         }
-        else {
-            return new ResultResponse(false);
-        }
+        vote.setUser(user);
+        vote.setPost(post);
+        vote.setTime(LocalDateTime.now());
+        vote.setValue(voteValue);    // Меняем на лайк/дизлайк
+        voteRepository.save(vote);
+
+        return true;
+    }
+
+    /**
+     * Метод подсчета лайков у поста
+     *
+     * @param post - искомый пост
+     * @return - кол-во лайков
+     */
+    public int countLikesFromPost(Post post) {
+        return voteRepository.countVotesFromPost(likeValue, post);
+    }
+
+    /**
+     * Метод подсчета дизлайков у поста
+     *
+     * @param post - искомый пост
+     * @return - кол-во дизлайков
+     */
+    public int countDislikesFromPost(Post post) {
+        return voteRepository.countVotesFromPost(dislikeValue, post);
     }
 }
