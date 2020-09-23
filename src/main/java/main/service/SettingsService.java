@@ -133,4 +133,13 @@ public class SettingsService {
     private String booleanToString(boolean b) {
         return b ? "YES" : "NO";
     }
+
+    /**
+     * Метод проверяет разрешен ли показ статистики всего блога.
+     *
+     * @return true - разрешен, false - запрещен
+     */
+    public boolean globalStatisticsIsAvailable() {
+        return settingsRepository.existsByCodeAndValueIgnoreCase(STATISTICS_IS_PUBLIC, "YES");
+    }
 }

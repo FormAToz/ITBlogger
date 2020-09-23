@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface GlobalSettingsRepository extends CrudRepository<GlobalSettings, Integer> {
 
     Optional<GlobalSettings> findByCode(String code);
+
+    boolean existsByCodeAndValueIgnoreCase(String code, String value);
 }

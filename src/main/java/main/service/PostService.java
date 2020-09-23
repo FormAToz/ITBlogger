@@ -11,10 +11,7 @@ import main.api.response.post.PostFullResponse;
 import main.api.response.post.PostResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
-import main.exception.CommentNotFoundException;
-import main.exception.PostNotFoundException;
-import main.exception.InvalidParameterException;
-import main.exception.UserNotFoundException;
+import main.exception.*;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
@@ -50,6 +47,9 @@ public class PostService {
     private CommentService commentService;
     @Autowired
     private VoteService voteService;
+    @Autowired
+    private SettingsService settingsService;
+
 
     /**
      * Метод получает любой пост из репозитория по id
@@ -281,8 +281,8 @@ public class PostService {
     /**
      * Метод подсчета всех постов, ожидающих модерации
      */
-    public int countPostsForModeration() {
-        return postRepository.countAllPostsForModeration();
+    public long countPostsForModeration() {
+        return postRepository.countAllPostsForModeration().orElse(0L);
     }
 
 
@@ -448,12 +448,26 @@ public class PostService {
 
 
     /**
-     * Метод выдаёт статистику по всем постам блога. В случае, если публичный показ статистики блога запрещён
-     * (см. соответствующий параметр в global_settings) и текущий пользователь не модератор, должна выдаваться ошибка 401.
+     * Метод выдаёт статистику по всем постам блога.
+     *
+     * В случае, если публичный показ статистики блога запрещён (см. соответствующий параметр в global_settings)
+     * и текущий пользователь не модератор, должна выдаваться ошибка 401.
+     *
+     * @return StatisticsResponse
      */
-    public ResponseEntity<StatisticsResponse> getGlobalStatistics() {
-        // TODO реализовать
-        return new ResponseEntity<>(new StatisticsResponse(), HttpStatus.OK);
+    public StatisticsResponse getGlobalStatistics()
+            throws ApplicationException, UserNotFoundException {
+        // если настройки показа отключены и пользователь не модератор
+        if (!settingsService.globalStatisticsIsAvailable() && !userService.isModerator(userService.getUserFromSession())) {
+            throw new ApplicationException("Статистика просмотра всего блога недоступна");
+        }
+
+        return new StatisticsResponse()
+                .postsCount(postRepository.countFilteredPosts().orElse(0L))
+                .likesCount(voteService.countAllLikes())
+                .dislikesCount(voteService.countAllDislikes())
+                .viewsCount(postRepository.countAllViewsFromPosts().orElse(0L))
+                .firstPublication(timeService.getTimestampFromLocalDateTime(postRepository.getTimeOfFirstPost()));
     }
 
 
@@ -507,5 +521,38 @@ public class PostService {
         commentService.saveComment(comment);
 
         return new IdResponse(comment.getId());
+    }
+
+
+    /**
+     * Поиск постов, доступных для чтения, конкретного пользователя.
+     *
+     * @param user - пользователь, чьи посты нужно найти
+     * @return - число постов, доступных для чтения
+     */
+    public long countPostsByUser(User user) {
+        return postRepository.countFilteredPostsByUser(user).orElse(0L);
+    }
+
+
+    /**
+     * Сумма всех просмотров постов, доступных для чтения, у конкретного пользователя.
+     *
+     * @param user - пользователь, чьи просмотры постов нужно получить
+     * @return - сумма просмотров всех постов
+     */
+    public long countViewsFromPostsByUser(User user) {
+        return postRepository.countViewsFromPostsByUser(user).orElse(0L);
+    }
+
+
+    /**
+     * Получение времени первой публикации у конкретного пользователя.
+     *
+     * @param user - пользователь, чье время первой публикации надо получить
+     * @return - время первой публикации или null, если не найдено ни одной публикации
+     */
+    public LocalDateTime getTimeOfFirstPostByUser(User user) {
+        return postRepository.getTimeOfFirstPostByUser(user.getId());
     }
 }

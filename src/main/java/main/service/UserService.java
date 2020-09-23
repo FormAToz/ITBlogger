@@ -8,9 +8,8 @@ import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.result.UserResultResponse;
 import main.api.response.user.UserFullResponse;
-import main.exception.ApplicationException;
 import main.exception.InvalidParameterException;
-import main.exception.SettingNotFoundException;
+import main.exception.PostNotFoundException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.User;
@@ -49,6 +48,8 @@ public class UserService {
     private CaptchaService captchaService;
     @Autowired
     private TimeService timeService;
+    @Autowired
+    private VoteService voteService;
 
     /**
      * Создание тестового юзера
@@ -129,9 +130,16 @@ public class UserService {
      * общие количества параметров для всех публикаций, у который он является автором и доступные для чтения.
      * @return - StatisticsResponse
      */
-    public StatisticsResponse getMyStatistics() {
-        // TODO реализовать
-        return new StatisticsResponse();
+    public StatisticsResponse getMyStatistics() throws UserNotFoundException, InvalidParameterException {
+        User user = getUserFromSession();
+        LocalDateTime timeOfFirstPost = postService.getTimeOfFirstPostByUser(user);
+
+        return new StatisticsResponse()
+                .postsCount(postService.countPostsByUser(user))
+                .likesCount(voteService.countLikesByUser(user))
+                .dislikesCount(voteService.countDislikesByUser(user))
+                .viewsCount(postService.countViewsFromPostsByUser(user))
+                .firstPublication(timeService.getTimestampFromLocalDateTime(timeOfFirstPost));
     }
 
     /**

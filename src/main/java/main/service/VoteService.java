@@ -38,7 +38,7 @@ public class VoteService {
      * @param postId - id поста которому ставим лайк
      */
     public ResultResponse likePost(int postId) throws PostNotFoundException, UserNotFoundException {
-        return new ResultResponse(updateVote(likeValue, postId));
+        return new ResultResponse(setVote(likeValue, postId));
     }
 
     /**
@@ -49,7 +49,7 @@ public class VoteService {
      * @param postId - id поста
      */
     public ResultResponse dislikePost(int postId) throws PostNotFoundException, UserNotFoundException {
-        return new ResultResponse(updateVote(dislikeValue, postId));
+        return new ResultResponse(setVote(dislikeValue, postId));
     }
 
     /**
@@ -62,12 +62,11 @@ public class VoteService {
      * @throws PostNotFoundException в случае, если пост не найден
      * @throws UserNotFoundException в случае, если пользователь не найден
      */
-    private boolean updateVote(byte voteValue, int postId) throws PostNotFoundException, UserNotFoundException {
+    private boolean setVote(byte voteValue, int postId) throws PostNotFoundException, UserNotFoundException {
         Post post = postService.getActiveAndAcceptedPostById(postId);
         User user = userService.getUserFromSession();
         PostVote vote = voteRepository.findByUserAndPost(user, post).orElse(new PostVote());
 
-        // FIXME лайк/дизлайк ставится кривовато при переходе  главной на получение поста
         if (vote.getValue() == voteValue) {     // Если лайк/дизлайк уже был
             return false;
         }
@@ -86,8 +85,8 @@ public class VoteService {
      * @param post - искомый пост
      * @return - кол-во лайков
      */
-    public int countLikesFromPost(Post post) {
-        return voteRepository.countVotesFromPost(likeValue, post);
+    public long countLikesFromPost(Post post) {
+        return voteRepository.countVotesFromPost(likeValue, post).orElse(0L);
     }
 
     /**
@@ -96,7 +95,45 @@ public class VoteService {
      * @param post - искомый пост
      * @return - кол-во дизлайков
      */
-    public int countDislikesFromPost(Post post) {
-        return voteRepository.countVotesFromPost(dislikeValue, post);
+    public long countDislikesFromPost(Post post) {
+        return voteRepository.countVotesFromPost(dislikeValue, post).orElse(0L);
+    }
+
+    /**
+     * Метод подсчета всех лайков конкретного пользователя
+     *
+     * @param user - пользователь, чьи лайки нужно посчитать
+     * @return - кол-во лайков
+     */
+    public long countLikesByUser(User user) {
+        return voteRepository.countByValueAndUser(likeValue, user).orElse(0L);
+    }
+
+    /**
+     * Метод подсчета всех дизлайков конкретного пользователя
+     *
+     * @param user - пользователь, чьи дизлайки нужно посчитать
+     * @return - кол-во дизлайков
+     */
+    public long countDislikesByUser(User user) {
+        return voteRepository.countByValueAndUser(dislikeValue, user).orElse(0L);
+    }
+
+    /**
+     * Метод подсчета всех лайков.
+     *
+     * @return - кол-во всех лайков
+     */
+    public long countAllLikes() {
+       return voteRepository.countByValue(likeValue).orElse(0L);
+    }
+
+    /**
+     * Метод подсчета всех дизлайков.
+     *
+     * @return - кол-во всех дизлайков
+     */
+    public long countAllDislikes() {
+        return voteRepository.countByValue(dislikeValue).orElse(0L);
     }
 }

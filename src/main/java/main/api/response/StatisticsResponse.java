@@ -8,35 +8,35 @@ package main.api.response;
  *  "likesCount": 15,
  *  "dislikesCount": 2,
  *  "viewsCount": 58,
- *  "firstPublication": 1590217200
+ *  "firstPublication": 1590217200 (время в формате UTC)
  * }
  */
 public class StatisticsResponse {
-    private int postsCount;
-    private int likesCount;
-    private int dislikesCount;
-    private int viewsCount;
+    private long postsCount;
+    private long likesCount;
+    private long dislikesCount;
+    private long viewsCount;
     private long firstPublication;
 
     public StatisticsResponse() {
     }
 
-    public StatisticsResponse postsCount(int postsCount) {
+    public StatisticsResponse postsCount(long postsCount) {
         this.postsCount = postsCount;
         return this;
     }
 
-    public StatisticsResponse likesCount(int likesCount) {
+    public StatisticsResponse likesCount(long likesCount) {
         this.likesCount = likesCount;
         return this;
     }
 
-    public StatisticsResponse dislikesCount(int dislikesCount) {
+    public StatisticsResponse dislikesCount(long dislikesCount) {
         this.dislikesCount = dislikesCount;
         return this;
     }
 
-    public StatisticsResponse viewsCount(int viewsCount) {
+    public StatisticsResponse viewsCount(long viewsCount) {
         this.viewsCount = viewsCount;
         return this;
     }
@@ -46,19 +46,19 @@ public class StatisticsResponse {
         return this;
     }
 
-    public int getPostsCount() {
+    public long getPostsCount() {
         return postsCount;
     }
 
-    public int getLikesCount() {
+    public long getLikesCount() {
         return likesCount;
     }
 
-    public int getDislikesCount() {
+    public long getDislikesCount() {
         return dislikesCount;
     }
 
-    public int getViewsCount() {
+    public long getViewsCount() {
         return viewsCount;
     }
 

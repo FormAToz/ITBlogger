@@ -26,10 +26,10 @@ public class PostResponse {
     protected UserResponse user;
     protected String title;
     protected String announce;
-    protected int likeCount;
-    protected int dislikeCount;
-    protected int commentCount;
-    protected int viewCount;
+    protected long likeCount;
+    protected long dislikeCount;
+    protected long commentCount;
+    protected long viewCount;
 
     public PostResponse() {
     }
@@ -59,22 +59,22 @@ public class PostResponse {
         return this;
     }
 
-    public PostResponse likeCount(int likeCount) {
+    public PostResponse likeCount(long likeCount) {
         this.likeCount = likeCount;
         return this;
     }
 
-    public PostResponse dislikeCount(int dislikeCount) {
+    public PostResponse dislikeCount(long dislikeCount) {
         this.dislikeCount = dislikeCount;
         return this;
     }
 
-    public PostResponse commentCount(int commentCount) {
+    public PostResponse commentCount(long commentCount) {
         this.commentCount = commentCount;
         return this;
     }
 
-    public PostResponse viewCount(int viewCount) {
+    public PostResponse viewCount(long viewCount) {
         this.viewCount = viewCount;
         return this;
     }
@@ -99,19 +99,19 @@ public class PostResponse {
         return announce;
     }
 
-    public int getLikeCount() {
+    public long getLikeCount() {
         return likeCount;
     }
 
-    public int getDislikeCount() {
+    public long getDislikeCount() {
         return dislikeCount;
     }
 
-    public int getCommentCount() {
+    public long getCommentCount() {
         return commentCount;
     }
 
-    public int getViewCount() {
+    public long getViewCount() {
         return viewCount;
     }
 }

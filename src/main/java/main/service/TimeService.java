@@ -1,5 +1,6 @@
 package main.service;
 
+import main.exception.InvalidParameterException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -40,10 +41,12 @@ public class TimeService {
     /**
      * Метод преобразования LocalDateTime в секунды
      * @param localDateTime - время для преобразования
-     * @return - long, время в секундах
+     * @return - long (время в секундах). 0 - если время было передано как null
      */
     public long getTimestampFromLocalDateTime(LocalDateTime localDateTime) {
-        return localDateTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
+        return localDateTime == null // может придти, если в базе нет ни одного поста
+                ? 0
+                : localDateTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
     }
 
     /**

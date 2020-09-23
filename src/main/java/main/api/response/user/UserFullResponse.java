@@ -16,7 +16,7 @@ package main.api.response.user;
 public class UserFullResponse extends UserResponse {
     private String email;
     private boolean moderation;
-    private int moderationCount;
+    private long moderationCount;
     private boolean settings;
 
     public UserFullResponse() {
@@ -47,7 +47,7 @@ public class UserFullResponse extends UserResponse {
         return this;
     }
 
-    public UserFullResponse moderationCount(int moderationCount) {
+    public UserFullResponse moderationCount(long moderationCount) {
         this.moderationCount = moderationCount;
         return this;
     }
@@ -65,7 +65,7 @@ public class UserFullResponse extends UserResponse {
         return moderation;
     }
 
-    public int getModerationCount() {
+    public long getModerationCount() {
         return moderationCount;
     }
 

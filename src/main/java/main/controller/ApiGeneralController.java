@@ -131,12 +131,24 @@ public class ApiGeneralController {
     // Моя статистика
     @GetMapping("/statistics/my")
     public ResponseEntity<StatisticsResponse> myStatistics() {
-        return new ResponseEntity<>(userService.getMyStatistics(), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(userService.getMyStatistics(), HttpStatus.OK);
+
+        } catch (UserNotFoundException | InvalidParameterException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
     }
 
     // Статистика по всему блогу
     @GetMapping("/statistics/all")
     public ResponseEntity<StatisticsResponse> allStatistics() {
-        return postService.getGlobalStatistics();
+        try {
+            return new ResponseEntity<>(postService.getGlobalStatistics(), HttpStatus.OK);
+
+        } catch (ApplicationException | UserNotFoundException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);  // FIXME убрать, полсе security
+        }
     }
 }

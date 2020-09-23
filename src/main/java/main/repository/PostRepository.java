@@ -7,6 +7,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,7 +41,41 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
      * Поиск всех не скрытых постов на модерацию
      */
     @Query("select count(*)" + ACTIVE_POSTS_FILTER + " and p.moderationStatus != 'ACCEPTED'")
-    int countAllPostsForModeration();
+    Optional<Long> countAllPostsForModeration();
+
+    /**
+     * Метод подсчета всех не скрытых постов (в том числе не проверенных модератором)
+     *
+     * @return - кол-во постов
+     */
+    @Query(value = "select count(*)" + ACTIVE_POSTS_FILTER)
+    Optional<Long> countFilteredPosts();
+
+    /**
+     * Поиск постов, доступных для чтения, конкретного пользователя.
+     *
+     * @param user - пользователь, чьи посты нужно найти
+     * @return - число постов, доступных для чтения
+     */
+    @Query(value = "select count(*) from Post p " + POST_DISPLAY_FILTER + " and p.user = ?1")
+    Optional<Long> countFilteredPostsByUser(@Param("user") User user);
+
+    /**
+     * Метод подсчета просмотров всех постов, доступных для чтения
+     *
+     * @return - кол-во просмотров
+     */
+    @Query(value = "select sum(p.viewCount) from Post p " + POST_DISPLAY_FILTER)
+    Optional<Long> countAllViewsFromPosts();
+
+    /**
+     * Сумма всех просмотров постов, доступных для чтения, у конкретного пользователя.
+     *
+     * @param user - пользователь, чьи просмотры постов нужно получить
+     * @return - сумма просмотров всех постов
+     */
+    @Query(value = "select sum(p.viewCount) from Post p " + POST_DISPLAY_FILTER + " and p.user = ?1")
+    Optional<Long> countViewsFromPostsByUser(User user);
 
     /**
      * Поиск всех нескрытых постов по статусу модерации
@@ -81,4 +116,21 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
      */
     @Query(value = "from Post p " + POST_DISPLAY_FILTER + " and date_format(p.time, '%Y-%m-%d') = ?1")
     List<Post> getPostsByDate(@Param("date") String date);
+
+    /**
+     * Метод поиска времени первой публикации.
+     *
+     * @return - Время первой публикации
+     */
+    @Query(nativeQuery = true, value = "SELECT time FROM posts where is_active = 1 and moderation_status = 'ACCEPTED' order by time limit 1")
+    LocalDateTime getTimeOfFirstPost();
+
+    /**
+     * Получение времени первой публикации, доступной для чтения, у конкретного пользователя.
+     *
+     * @param id - id пользователя, чье время первой публикации надо получить
+     * @return - время первой публикации
+     */
+    @Query(nativeQuery = true, value = "SELECT time FROM posts where is_active = 1 and moderation_status = 'ACCEPTED' and user_id = :userId order by time limit 1")
+    LocalDateTime getTimeOfFirstPostByUser(@Param("userId") int id);
 }
