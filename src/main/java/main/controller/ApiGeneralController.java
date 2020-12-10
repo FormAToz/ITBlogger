@@ -3,6 +3,7 @@ package main.controller;
 import main.Main;
 import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
+import main.api.request.ProfileRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.InitResponse;
 import main.api.response.SettingsResponse;
@@ -17,10 +18,13 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.naming.SizeLimitExceededException;
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -80,9 +84,18 @@ public class ApiGeneralController {
 
     // Загрузка изображений
     @PostMapping(value = "/image", consumes = {"multipart/form-data"})
-    public ResponseEntity loadImage(MultipartFile image) {
-        // TODO разобраться со значением с фронта и откуда приходят изображения
-        return imageService.loadImage(image);
+    public ResponseEntity<?> loadImage(MultipartFile image) {
+        try {
+            return new ResponseEntity<>(imageService.loadImage(image).getPath(),HttpStatus.OK);
+
+        } catch (IOException | InvalidParameterException e) {
+
+            // TODO delete print
+            e.printStackTrace();
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("image", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Отправка комментария к посту
@@ -121,11 +134,51 @@ public class ApiGeneralController {
         return new ResponseEntity<>(postService.getAllPostsForCalendar(year), HttpStatus.OK);
     }
 
-    // Редактирование моего профиля
-    @PostMapping("/profile/my")
-    public ResponseEntity<ResultResponse> editMyProfile(/* TODO Разобраться с данными с фронта*/) {
-        // TODO проверить параметры с фронта
-        return userService.editMyProfile();
+    // Редактирование моего профиля (с загрузкой фото)
+    @PostMapping(value = "/profile/my",
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResultResponse> editMyProfile(@RequestParam("photo") MultipartFile image,
+                                                        @ModelAttribute ProfileRequest profileRequest) {
+
+        try {
+            return new ResponseEntity<>(userService.editMyProfile(image, profileRequest), HttpStatus.OK);
+
+        } catch (IOException e) {
+            // TODO delete print
+            e.printStackTrace();
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("image", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+
+        } catch (InvalidParameterException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+
+        } catch (UserNotFoundException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("user", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // Редактирование моего профиля (без загрузки фото)
+    @PostMapping("profile/my")
+    public ResponseEntity<ResultResponse> editMyProfile(@RequestBody ProfileRequest profileRequest) {
+        try {
+            return new ResponseEntity<>(userService.editMyProfile(profileRequest), HttpStatus.OK);
+
+        } catch (UserNotFoundException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of("user", e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+
+        } catch (InvalidParameterException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())),
+                    HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Моя статистика

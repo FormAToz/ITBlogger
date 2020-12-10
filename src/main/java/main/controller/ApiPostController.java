@@ -1,6 +1,5 @@
 package main.controller;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import main.Main;
 import main.api.request.PostRequest;
 import main.api.request.VoteRequest;
@@ -8,8 +7,8 @@ import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
-import main.exception.PostNotFoundException;
 import main.exception.InvalidParameterException;
+import main.exception.PostNotFoundException;
 import main.exception.UserNotFoundException;
 import main.service.PostService;
 import main.service.VoteService;

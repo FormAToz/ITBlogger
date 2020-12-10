@@ -6,13 +6,10 @@ import main.api.request.auth.LoginRequest;
 import main.api.response.CaptchaResponse;
 import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
-import main.exception.ApplicationException;
 import main.exception.InvalidParameterException;
-import main.exception.SettingNotFoundException;
 import main.exception.UserNotFoundException;
 import main.service.CaptchaService;
 import main.service.SettingsService;
-import main.service.TextService;
 import main.service.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,9 +52,9 @@ public class ApiAuthController {
 
     // Статус авторизации
     @GetMapping("/check")
-    public ResponseEntity<ResultResponse> check(HttpServletRequest request) {
+    public ResponseEntity<ResultResponse> authStatus(HttpServletRequest request) {
         try {
-            return new ResponseEntity<>(userService.check(), HttpStatus.OK);
+            return new ResponseEntity<>(userService.authStatus(), HttpStatus.OK);
 
         } catch (UserNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());

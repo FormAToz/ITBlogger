@@ -9,7 +9,11 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC
     username: root
-    password: testformat
+    password: root
+  servlet:
+    multipart:
+      max-file-size: -1  #Makes handling file size on a controller level
+      max-request-size: -1
 
 #Captcha service properties
 captcha:
@@ -20,7 +24,18 @@ captcha:
     width: 100
     format: png
 
-#like service properties
+#Like service properties
 vote:
   like-value: 1
   dislike-value: -1
+
+#File upload service properties
+file:
+  max-file-size: 5 #MB
+  max-image-height: 36 #px
+  max-image-width: 36 #px
+  upload-directory: upload
+
+#Application values
+photo:
+  delete-value: 1

@@ -1,6 +1,7 @@
 package main.service;
 
 import main.Main;
+import main.api.request.ProfileRequest;
 import main.api.request.auth.AuthorizationRequest;
 import main.api.request.auth.LoginRequest;
 import main.api.response.StatisticsResponse;
@@ -9,7 +10,6 @@ import main.api.response.result.ResultResponse;
 import main.api.response.result.UserResultResponse;
 import main.api.response.user.UserFullResponse;
 import main.exception.InvalidParameterException;
-import main.exception.PostNotFoundException;
 import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.User;
@@ -20,12 +20,15 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +53,11 @@ public class UserService {
     private TimeService timeService;
     @Autowired
     private VoteService voteService;
+    @Autowired
+    private ImageService imageService;
+
+    @Value("${photo.delete-value}")
+    int photoDeleteValue;
 
     /**
      * Создание тестового юзера
@@ -61,7 +69,7 @@ public class UserService {
         u.setEmail("7.danilov@gmail.com");
         u.setRegTime(LocalDateTime.now().plusHours(3));
         u.setPhoto("a/b/c.jpeg");
-        u.setPassword("123");
+        u.setPassword(encodePassword("123456"));
         u.setIsModerator(1);
         userRepository.save(u);
     }
@@ -198,7 +206,7 @@ public class UserService {
      * Значение moderationCount содержит количество постов необходимых для проверки модераторами.
      * Считаются посты имеющие статус NEW и не проверерны модератором. Если пользователь не модератор возращать 0 в moderationCount.
      */
-    public ResultResponse check() throws UserNotFoundException {
+    public ResultResponse authStatus() throws UserNotFoundException {
         return new UserResultResponse(true, migrateToUserFullResponse(getUserFromSession()));
     }
 
@@ -291,6 +299,7 @@ public class UserService {
      * captcha_secret - секретный код капчи
      */
     public ResponseEntity<ResultResponse> changePassword(AuthorizationRequest authorizationRequest) {
+        //TODO
         if (true) {
             return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
         }
@@ -344,15 +353,80 @@ public class UserService {
      * name - новое имя
      * email - новый e-mail
      * password - новый пароль
+     *
+     * @param image - загружаемое изображение
+     * @param profileRequest - запрос с фронта с данными о профиле
+     * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
      */
-    public ResponseEntity<ResultResponse> editMyProfile() {
-        if (true) {
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
-        }
-        else {
-            Map<String, String> errors = new HashMap<>();
+    public ResultResponse editMyProfile(MultipartFile image, ProfileRequest profileRequest)
+            throws IOException, InvalidParameterException, UserNotFoundException {
+        imageService.resizeAndWriteImage(image);
+        // TODO разобраться с установкой пути до изображения
+        // записать юзеру путь до фото
+        return editMyProfile(profileRequest);
+    }
 
-            return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.OK);
+    /**
+     * Метод обрабатывает информацию, введённую пользователем в форму редактирования своего профиля.
+     * Если пароль не введён, его не нужно изменять. Если введён, должна проверяться его корректность: достаточная длина.
+     * Одинаковость паролей, введённых в двух полях, проверяется на frontend - на сервере проверка не требуется.
+     *
+     * Запрос без изменения пароля и фотографии: Content-Type: application/json
+     *
+     * {
+     *   "name":"Sendel",
+     *   "email":"sndl@mail.ru"
+     * }
+     * Запрос c изменением пароля и без изменения фотографии: Content-Type: application/json
+     *
+     * {
+     *   "name":"Sendel",
+     *   "email":"sndl@mail.ru",
+     *   "password":"123456"
+     * }
+     *
+     * Запрос на удаление фотографии без изменения пароля: Content-Type: application/json
+     *
+     * {
+     *   "name":"Sendel",
+     *   "email":"sndl@mail.ru",
+     *   "removePhoto":1,
+     *   "photo": ""
+     * }
+     *
+     * removePhoto - параметр, который указывает на то, что фотографию нужно удалить (если значение равно 1)
+     * name - новое имя
+     * email - новый e-mail
+     * password - новый пароль
+     *
+     * @param profileRequest - запрос с фронта с данными о профиле
+     * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
+     */
+    public ResultResponse editMyProfile(ProfileRequest profileRequest) throws UserNotFoundException, InvalidParameterException {
+        User user = getUserFromSession();
+        String name = profileRequest.getName();
+        String email = profileRequest.getEmail();
+        String password = profileRequest.getPassword();
+        int removePhoto = profileRequest.getRemovePhoto();
+
+        textService.checkNameForCorrect(name);
+        user.setName(name);
+
+        textService.checkEmailForCorrect(email);
+        // TODO проверка, что имейл не занят другим пользователем
+        user.setEmail(email);
+
+        if (password.length() > 0) {
+            textService.checkPasswordLength(password);
+            user.setPassword(password);
         }
+
+        if (removePhoto == photoDeleteValue) {
+            // TODO удалять файл с диска?
+            user.setPhoto("");
+        }
+
+        userRepository.save(user);
+        return new ResultResponse(true);
     }
 }

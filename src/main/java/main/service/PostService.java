@@ -50,6 +50,7 @@ public class PostService {
     @Autowired
     private SettingsService settingsService;
 
+    //TODO переделать все посты с List на Pageable
 
     /**
      * Метод получает любой пост из репозитория по id
