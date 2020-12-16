@@ -1,8 +1,13 @@
 package main.service;
 
+import main.Main;
 import main.api.response.result.ImageResultResponse;
 import main.exception.InvalidParameterException;
 import main.model.enums.FileExtension;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,6 +35,9 @@ import java.util.Random;
  */
 @Service
 public class ImageService {
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+
     @Autowired
     private HttpServletRequest request;
 
@@ -46,21 +54,23 @@ public class ImageService {
     /**
      * Метод загрузки изображения
      * @param image загружаемое изображение
-     * @return ImageResultResponse с путем до загружаемого изображения
-     * @throws IOException в случае ошибки чтения
+     * @return ImageResultResponse с путем до загружаемого изображения (/upload/image.jpg)
+     * @throws IOException в случае ошибки чтения/записи
      * @throws InvalidParameterException в случае ошибок обработки изображения (превышен размер, неверный формат и т.д.)
      */
     public ImageResultResponse loadImage(MultipartFile image) throws IOException, InvalidParameterException {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
-        // создаем папку (при отсутствии) и сохраняем файл
-        if (Files.notExists(Paths.get(uploadPath))) {
-            new File(uploadPath).mkdir();
-        }
-        Files.copy(image.getInputStream(), Paths.get(uploadPath, image.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
+        String randomUploadPath = uploadPath + generateFolder(3, 2);
 
-        return new ImageResultResponse(true, "/" + uploadPath + "/" + image.getOriginalFilename());
+        // создаем папку (при отсутствии) и сохраняем файл
+        if (Files.notExists(Paths.get(randomUploadPath))) {
+            new File(randomUploadPath).mkdirs();
+        }
+        Files.copy(image.getInputStream(), Paths.get(randomUploadPath, image.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
+
+        return new ImageResultResponse(true, randomUploadPath + image.getOriginalFilename());
     }
 
     /**
@@ -107,31 +117,38 @@ public class ImageService {
 
     /**
      * Метод генерирует случайную строку из определенного кол-ва символов
-     * @param length длина строки
-     * @return String
+     * @param folderCount кол-во вложенныхпапок
+     * @param folderLength кол-во символов в названии подпапки
+     * @return String - сгенерированное название папки
      */
-    public static String generateFolder(int length) {
+    public static String generateFolder(int folderCount, int folderLength) {
+        StringBuilder path = new StringBuilder("/");
         Random r = new Random();
-        String s = r.ints(48, 122)
-                .filter(i -> (i < 57 || i > 65) && (i < 90 || i > 97))
-                .mapToObj(i -> (char) i)
-                .limit(length)
-                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
-                .toString();
-        return s;
+
+        for (int i = 0; i < folderCount; i++) {
+            String s = r.ints(48, 122)
+                    .filter(el -> (el < 57 || el > 65) && (el < 90 || el > 97))
+                    .mapToObj(el -> (char) el)
+                    .limit(folderLength)
+                    .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                    .toString();
+            path.append(s).append("/");
+        }
+
+        return path.toString();
     }
 
     /**
      * Метод изменяет размер и сохраняет изображение
      * @param image изменячемое изображение
      * @return путь до измененного изображения
-     * @throws IOException в случае ошибок чтения изображения
+     * @throws IOException в случае ошибок чтения/записи изображения
      */
-    public String resizeAndWriteImage(MultipartFile image) throws IOException, InvalidParameterException {
+    public String resizeAndWriteImage(int userId, MultipartFile image) throws IOException, InvalidParameterException {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
-        Path scaledPath = Paths.get(uploadPath).resolve("scaled");
+        Path scaledPath = Paths.get(uploadPath + "/scaled/" + userId);
 
         // создаем папку при ее отсутствии
         if (Files.notExists(scaledPath)) {
@@ -217,5 +234,20 @@ public class ImageService {
         imageOutputStream.flush();
         imageOutputStream.close();
         outputStream.close();
+    }
+
+    /**
+     * Метод удаления файла по указанному пути
+     * @param destinationPath путь к файлу
+     */
+    public void removePhoto(String destinationPath) {
+        if (destinationPath == null || destinationPath.isEmpty()) {
+            return;
+        }
+
+        File file = new File(destinationPath);
+        if (!file.delete()) {
+            LOGGER.info(MARKER, "ошибка при удалении файла: {}", destinationPath);
+        }
     }
 }

@@ -360,9 +360,12 @@ public class UserService {
      */
     public ResultResponse editMyProfile(MultipartFile image, ProfileRequest profileRequest)
             throws IOException, InvalidParameterException, UserNotFoundException {
-        imageService.resizeAndWriteImage(image);
-        // TODO разобраться с установкой пути до изображения
-        // записать юзеру путь до фото
+        User user = getUserFromSession();
+        String avatarPath = imageService.resizeAndWriteImage(user.getId(), image);
+
+        user.setPhoto(avatarPath);
+        userRepository.save(user);
+
         return editMyProfile(profileRequest);
     }
 
@@ -409,20 +412,28 @@ public class UserService {
         String password = profileRequest.getPassword();
         int removePhoto = profileRequest.getRemovePhoto();
 
+        // проверка имени
         textService.checkNameForCorrect(name);
         user.setName(name);
 
+        // проверка e-mail
         textService.checkEmailForCorrect(email);
-        // TODO проверка, что имейл не занят другим пользователем
-        user.setEmail(email);
-
-        if (password.length() > 0) {
-            textService.checkPasswordLength(password);
-            user.setPassword(password);
+        if (userRepository.existsByIdAndEmailIgnoreCase(user.getId(), email) || !userRepository.existsByEmailIgnoreCase(email)) {
+            user.setEmail(email);
+        }else {
+            throw new InvalidParameterException("email", "E-mail занят другим пользователем");
         }
 
+
+        // проверка пароля
+        if (password != null) {
+            textService.checkPasswordLength(password);
+            user.setPassword(encodePassword(password));
+        }
+
+        // изменение аватара
         if (removePhoto == photoDeleteValue) {
-            // TODO удалять файл с диска?
+            imageService.removePhoto(user.getPhoto());
             user.setPhoto("");
         }
 

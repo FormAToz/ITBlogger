@@ -12,7 +12,7 @@ public class TextService {
     private final int MIN_PASSWORD_LENGTH = 6;
     private static final String EMAIL_PATTERN =
             "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-    private final String NAME_PATTERN = "[\\w\\s&&[^0-9]]+";
+    private final String NAME_PATTERN = "[A-Za-zА-Яа-я0-9\\s]{1,20}";
 
     public void checkTitleAndTextLength(String title, String text) throws InvalidParameterException {
         if (title.length() < MIN_TITLE_LENGTH) {
@@ -40,6 +40,11 @@ public class TextService {
         }
     }
 
+    /**
+     * Метод проверки длины пароля
+     * @param password пароль
+     * @throws InvalidParameterException в случае, если длина недостаточна
+     */
     public void checkPasswordLength(String password) throws InvalidParameterException {
         if (password.length() < MIN_PASSWORD_LENGTH) {
             throw new InvalidParameterException("password", "Пароль короче " + MIN_PASSWORD_LENGTH + " символов");

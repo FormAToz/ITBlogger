@@ -23,7 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.naming.SizeLimitExceededException;
 import java.io.IOException;
 import java.util.Map;
 
@@ -83,14 +82,12 @@ public class ApiGeneralController {
     }
 
     // Загрузка изображений
-    @PostMapping(value = "/image", consumes = {"multipart/form-data"})
+    @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> loadImage(MultipartFile image) {
         try {
             return new ResponseEntity<>(imageService.loadImage(image).getPath(),HttpStatus.OK);
 
         } catch (IOException | InvalidParameterException e) {
-
-            // TODO delete print
             e.printStackTrace();
             return new ResponseEntity<>(
                     new ErrorResultResponse(false, Map.of("image", e.getMessage())),
@@ -145,7 +142,6 @@ public class ApiGeneralController {
             return new ResponseEntity<>(userService.editMyProfile(image, profileRequest), HttpStatus.OK);
 
         } catch (IOException e) {
-            // TODO delete print
             e.printStackTrace();
             return new ResponseEntity<>(
                     new ErrorResultResponse(false, Map.of("image", e.getMessage())),
@@ -201,7 +197,7 @@ public class ApiGeneralController {
 
         } catch (ApplicationException | UserNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);  // FIXME убрать, полсе security
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);  // FIXME убрать, после security
         }
     }
 }
