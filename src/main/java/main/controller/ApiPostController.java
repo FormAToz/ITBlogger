@@ -36,13 +36,11 @@ public class ApiPostController {
         this.voteService = voteService;
     }
 
-    // Все посты для отображения
     @GetMapping
     public ResponseEntity<PostCountResponse> getAllPosts(int offset, int limit, String mode) {
         return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
     }
 
-    // Добавление поста
     @PostMapping
     public ResponseEntity<ResultResponse> addPost(@RequestBody PostRequest postRequest) {
         try {
@@ -58,13 +56,11 @@ public class ApiPostController {
         }
     }
 
-    // Поиск поста
     @GetMapping("/search")
     public ResponseEntity<PostCountResponse> searchPost(int offset, int limit, String query) {
         return new ResponseEntity<>(postService.searchPosts(offset, limit, query), HttpStatus.OK);
     }
 
-    // Получение поста
     @GetMapping("/{id}")
     public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
         try {
@@ -76,7 +72,6 @@ public class ApiPostController {
         }
     }
 
-    // Редактирование поста
     @PutMapping("/{id}")
     public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody PostRequest postRequest) {
         try {
@@ -92,25 +87,21 @@ public class ApiPostController {
         }
     }
 
-    // Список постов за указанную дату
     @GetMapping("/byDate")
     public ResponseEntity<PostCountResponse> getAllPostsByDate(int offset, int limit, String date) {
         return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
-    // Список постов по тэгу
     @GetMapping("/byTag")
     public ResponseEntity<PostCountResponse> getAllPostsByTag(int offset, int limit, String tag) {
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
-    // Список постов на модерацию
     @GetMapping("/moderation")
     public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
         return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
-    // Список постов авторизированного пользователя
     @GetMapping("/my")
     public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
         try {
@@ -122,9 +113,8 @@ public class ApiPostController {
         }
     }
 
-    // Лайк поста
     @PostMapping("/like")
-    public ResponseEntity<ResultResponse> likePost(@RequestBody VoteRequest voteRequest) {
+    public ResponseEntity<ResultResponse> setPostLike(@RequestBody VoteRequest voteRequest) {
         try {
             return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
 
@@ -134,9 +124,8 @@ public class ApiPostController {
         }
     }
 
-    // Дизлайк поста
     @PostMapping("/dislike")
-    public ResponseEntity<ResultResponse> dislikePost(@RequestBody VoteRequest voteRequest) {
+    public ResponseEntity<ResultResponse> setPostDislike(@RequestBody VoteRequest voteRequest) {
         try {
             return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);
 

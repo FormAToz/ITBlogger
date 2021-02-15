@@ -6,6 +6,7 @@ import main.exception.SettingNotFoundException;
 import main.model.GlobalSettings;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -15,10 +16,14 @@ import javax.annotation.PostConstruct;
  */
 @Service
 public class SettingsService {
-    private static final String MULTIUSER_MODE = "MULTIUSER_MODE";
-    private static final String POST_PREMODERATION = "POST_PREMODERATION";
-    private static final String STATISTICS_IS_PUBLIC = "STATISTICS_IS_PUBLIC";
-    private static final String DEFAULT_VALUE = "YES";
+    @Value("${settings.multiuser-mode}")
+    private String multiUserMode;
+    @Value("${settings.post-premoderation}")
+    private String postPreModeration;
+    @Value("${settings.statistics-is-public}")
+    private String statisticsIsPublic;
+    @Value("${settings.default-value}")
+    private String defaultValue;
 
     @Autowired
     private GlobalSettingsRepository settingsRepository;
@@ -44,9 +49,9 @@ public class SettingsService {
     @PostConstruct
     private void initSettings() {
         if (settingsRepository.count() == 0) {
-            generateAndSave(MULTIUSER_MODE, "Многопользовательский режим", DEFAULT_VALUE);
-            generateAndSave(POST_PREMODERATION, "Премодерация постов", DEFAULT_VALUE);
-            generateAndSave(STATISTICS_IS_PUBLIC, "Показывать всем статистику блога", DEFAULT_VALUE);
+            generateAndSave(multiUserMode, "Многопользовательский режим", defaultValue);
+            generateAndSave(postPreModeration, "Премодерация постов", defaultValue);
+            generateAndSave(statisticsIsPublic, "Показывать всем статистику блога", defaultValue);
         }
     }
 
@@ -63,9 +68,9 @@ public class SettingsService {
      * @return SettingsResponse
      */
     public SettingsResponse getSettings() throws SettingNotFoundException {
-        GlobalSettings multiUserMode = findByCode(MULTIUSER_MODE);
-        GlobalSettings postPreModeration = findByCode(POST_PREMODERATION);
-        GlobalSettings statisticsIsPublic = findByCode(STATISTICS_IS_PUBLIC);
+        GlobalSettings multiUserMode = findByCode(this.multiUserMode);
+        GlobalSettings postPreModeration = findByCode(this.postPreModeration);
+        GlobalSettings statisticsIsPublic = findByCode(this.statisticsIsPublic);
 
         return new SettingsResponse(stringToBoolean(multiUserMode.getValue()),
                 stringToBoolean(postPreModeration.getValue()),
@@ -107,9 +112,9 @@ public class SettingsService {
      * @param response - запрос с фронта
      */
     public void saveSettings(SettingsResponse response) throws SettingNotFoundException {
-        updateSetting(MULTIUSER_MODE, response.isMultiUserMode());
-        updateSetting(POST_PREMODERATION, response.isPostPreModeration());
-        updateSetting(STATISTICS_IS_PUBLIC, response.isStatisticsIsPublic());
+        updateSetting(multiUserMode, response.isMultiUserMode());
+        updateSetting(postPreModeration, response.isPostPreModeration());
+        updateSetting(statisticsIsPublic, response.isStatisticsIsPublic());
     }
 
     /**
@@ -140,6 +145,6 @@ public class SettingsService {
      * @return true - разрешен, false - запрещен
      */
     public boolean globalStatisticsIsAvailable() {
-        return settingsRepository.existsByCodeAndValueIgnoreCase(STATISTICS_IS_PUBLIC, "YES");
+        return settingsRepository.existsByCodeAndValueIgnoreCase(statisticsIsPublic, "YES");
     }
 }

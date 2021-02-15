@@ -1,25 +1,32 @@
 package main.service;
 
 import main.exception.InvalidParameterException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TextService {
-    private final int MIN_TITLE_LENGTH = 3;
-    private final int MIN_TEXT_LENGTH = 50;
-    private final int MIN_ANNOUNCE_TEXT_LENGTH = 40;
-    private final int MIN_COMMENT_LENGTH = 3;
-    private final int MIN_PASSWORD_LENGTH = 6;
     private static final String EMAIL_PATTERN =
             "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     private final String NAME_PATTERN = "[A-Za-zА-Яа-я0-9\\s]{1,20}";
 
+    @Value("${text.min-title-length}")
+    private int minTitleLength;
+    @Value("${text.min-text-length}")
+    private int minTextLength;
+    @Value("${text.min-announce-text-length}")
+    private int minAnnounceTextLength;
+    @Value("${text.min-comment-length}")
+    private int minCommentLength;
+    @Value("${text.min-password-length}")
+    private int minPasswordLength;
+
     public void checkTitleAndTextLength(String title, String text) throws InvalidParameterException {
-        if (title.length() < MIN_TITLE_LENGTH) {
-            throw new InvalidParameterException("title", "Заголовок публикации менее " + MIN_TITLE_LENGTH + " символов");
+        if (title.length() < minTitleLength) {
+            throw new InvalidParameterException("title", "Заголовок публикации менее " + minTitleLength + " символов");
         }
-        if (text.length() < MIN_TEXT_LENGTH) {
-            throw new InvalidParameterException("text", "Текст публикации менее " + MIN_TEXT_LENGTH + " символов");
+        if (text.length() < minTextLength) {
+            throw new InvalidParameterException("text", "Текст публикации менее " + minTextLength + " символов");
         }
     }
 
@@ -27,16 +34,16 @@ public class TextService {
      * Анонс поста (кусок текста) с проверкой кол-ва символов без HTML тэгов
      */
     public String getAnnounce(String text) {
-        String postAnnounce = (text.length() > MIN_ANNOUNCE_TEXT_LENGTH)
-                ? text.substring(0, MIN_ANNOUNCE_TEXT_LENGTH).concat("...")
+        String postAnnounce = (text.length() > minAnnounceTextLength)
+                ? text.substring(0, minAnnounceTextLength).concat("...")
                 : text;
 
         return postAnnounce.replaceAll("(<.*?>)|(&.*?;)|([ ]{2,})", " ");
     }
 
     public void checkTextCommentLength(String text) throws InvalidParameterException {
-        if (text.length() < MIN_COMMENT_LENGTH) {
-            throw new InvalidParameterException("text", "Текст комментария не задан или менее " + MIN_COMMENT_LENGTH + " символов");
+        if (text.length() < minCommentLength) {
+            throw new InvalidParameterException("text", "Текст комментария не задан или менее " + minCommentLength + " символов");
         }
     }
 
@@ -46,8 +53,8 @@ public class TextService {
      * @throws InvalidParameterException в случае, если длина недостаточна
      */
     public void checkPasswordLength(String password) throws InvalidParameterException {
-        if (password.length() < MIN_PASSWORD_LENGTH) {
-            throw new InvalidParameterException("password", "Пароль короче " + MIN_PASSWORD_LENGTH + " символов");
+        if (password.length() < minPasswordLength) {
+            throw new InvalidParameterException("password", "Пароль короче " + minPasswordLength + " символов");
         }
     }
 

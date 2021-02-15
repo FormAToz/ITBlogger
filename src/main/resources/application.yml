@@ -43,10 +43,32 @@ file:
   max-file-size: 5 #MB
   max-image-height: 36 #px
   max-image-width: 36 #px
-  upload-directory: upload
+  upload-directory: /upload
 
 #Application values
+text:
+  min-title-length: 3
+  min-text-length: 50
+  min-announce-text-length: 40
+  min-comment-length: 3
+  min-password-length: 6
+
 photo:
   delete-value: 1
 
+user:
+  moderator-value: 1
+
+post:
+  unactive-value: 0
+  active-value: 1
+
 root-domain: http://localhost:8080
+change-password-subaddress: /login/change-password/  #part of sent to email link for restore password
+restore-password-subaddress: /login/restore-password  #part of link to password recovery page
+
+settings:
+  multiuser-mode: MULTIUSER_MODE
+  post-premoderation: POST_PREMODERATION
+  statistics-is-public: STATISTICS_IS_PUBLIC
+  default-value: YES

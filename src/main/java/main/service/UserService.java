@@ -6,7 +6,6 @@ import main.api.request.ProfileRequest;
 import main.api.request.auth.AuthorizationRequest;
 import main.api.request.auth.LoginRequest;
 import main.api.response.StatisticsResponse;
-import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.result.UserResultResponse;
 import main.api.response.user.UserFullResponse;
@@ -61,22 +60,27 @@ public class UserService {
 
     @Value("${photo.delete-value}")
     private int photoDeleteValue;
-
+    @Value("${user.moderator-value}")
+    private int moderatorValue;
     @Value("${root-domain}")
     private String rootDomain;
+    @Value("${change-password-subaddress}")
+    private String changePasswordSubAddress;
+    @Value("${restore-password-subaddress}")
+    private String restorePasswordSubAddress;
 
     /**
      * Создание тестового юзера
      */
     public void createTestUser() {
-        // TODO удалить
+        // TODO сделать дефолтного админа через миграцию бд
         User u = new User();
         u.setName("Андрей Данилов");
         u.setEmail("7.danilov@gmail.com");
         u.setRegTime(LocalDateTime.now().plusHours(3));
         u.setPhoto("a/b/c.jpeg");
         u.setPassword(encodePassword("123456"));
-        u.setIsModerator(1);
+        u.setIsModerator(moderatorValue);
         userRepository.save(u);
     }
 
@@ -126,7 +130,7 @@ public class UserService {
      * @return - true или false
      */
     public boolean isModerator(User user) {
-        return user.getIsModerator() == 1;
+        return user.getIsModerator() == moderatorValue;
     }
 
     /**
@@ -144,7 +148,7 @@ public class UserService {
      * общие количества параметров для всех публикаций, у который он является автором и доступные для чтения.
      * @return - StatisticsResponse
      */
-    public StatisticsResponse getMyStatistics() throws UserNotFoundException, InvalidParameterException {
+    public StatisticsResponse getMyStatistics() throws UserNotFoundException {
         User user = getUserFromSession();
         LocalDateTime timeOfFirstPost = postService.getTimeOfFirstPostByUser(user);
 
@@ -288,7 +292,7 @@ public class UserService {
         User user = userRepository.findByEmailIgnoreCase(emailRequest.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с E-mail: " + emailRequest.getEmail() + " не зарегистрирован"));
         String hash = UUID.randomUUID().toString();
-        String link = rootDomain + "/login/change-password/" + hash;
+        String link = rootDomain + changePasswordSubAddress + hash;
         String subject = "Код активации аккаунта ITBlogger";
         String message = "Для восстановления пароля перейдите по <a href=" + link + ">ссылке</a>";
 
@@ -309,14 +313,28 @@ public class UserService {
      * captcha - код капчи
      * captcha_secret - секретный код капчи
      */
-    public ResultResponse changePassword(AuthorizationRequest authorizationRequest) {
-        //TODO
-        if (true) {
-            return new ResultResponse(true);
-        }
-        else {
-            return new ErrorResultResponse(false, Map.of());
-        }
+    public ResultResponse changePassword(AuthorizationRequest authorizationRequest) throws InvalidParameterException {
+        User user = getUserByRecoveryCode(authorizationRequest.getCode());
+
+        captchaService.checkCaptcha(authorizationRequest.getCaptcha(), authorizationRequest.getCaptchaSecret());
+        textService.checkPasswordLength(authorizationRequest.getPassword());
+        user.setPassword(encodePassword(authorizationRequest.getPassword()));
+        user.setCode(null);
+        userRepository.save(user);
+
+        return new ResultResponse(true);
+    }
+
+    /**
+     * Метод получения пользователя по коду восстановления пароля.
+     * @param code код восстановления
+     * @return User (пользователя, у которого есть этот код)
+     * @throws InvalidParameterException в случае если пользователь не найден по коду
+     */
+    public User getUserByRecoveryCode(String code) throws InvalidParameterException {
+        return userRepository.getUserByCode(code).orElseThrow(() ->
+                new InvalidParameterException("code", "Ссылка для восстановления пароля устарела. <a href=\"" +
+                        restorePasswordSubAddress + "\">Запросить ссылку снова</a>"));
     }
 
     /**
@@ -424,7 +442,6 @@ public class UserService {
         // проверка имени
         textService.checkNameForCorrect(name);
         user.setName(name);
-
         // проверка e-mail
         textService.checkEmailForCorrect(email);
         if (userRepository.existsByIdAndEmailIgnoreCase(user.getId(), email) || !userRepository.existsByEmailIgnoreCase(email)) {
@@ -432,14 +449,11 @@ public class UserService {
         }else {
             throw new InvalidParameterException("email", "E-mail занят другим пользователем");
         }
-
-
         // проверка пароля
         if (password != null) {
             textService.checkPasswordLength(password);
             user.setPassword(encodePassword(password));
         }
-
         // изменение аватара
         if (removePhoto == photoDeleteValue) {
             imageService.removePhoto(user.getPhoto());

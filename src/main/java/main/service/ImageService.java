@@ -172,7 +172,7 @@ public class ImageService {
         int type =
                 (img.getTransparency() == Transparency.OPAQUE)
                         ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
-        BufferedImage ret = (BufferedImage) img;
+        BufferedImage ret = img;
         int w, h;
         if (higherQuality) {
             // Use multi-step technique: start with original size, then
@@ -249,5 +249,35 @@ public class ImageService {
         if (!file.delete()) {
             LOGGER.info(MARKER, "ошибка при удалении файла: {}", destinationPath);
         }
+    }
+
+    /**
+     * Метод преобразования изображения в массив байтов
+     */
+    public byte[] imageToBytes(BufferedImage image, String imageFormat) {
+        byte[] bytes = new byte[0];
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            ImageIO.write(image, imageFormat, baos);
+            baos.flush();
+            bytes = baos.toByteArray();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return bytes;
+    }
+
+    /**
+     * Метод изменения размера изображения
+     */
+    public BufferedImage resizeImage(BufferedImage image, int newHeight, int newWidth) {
+        BufferedImage outputImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
+        Image resultingImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_DEFAULT);
+
+        outputImage.getGraphics().drawImage(resultingImage, 0, 0, null);
+
+        return outputImage;
     }
 }

@@ -46,13 +46,11 @@ public class ApiGeneralController {
         this.settingsService = settingsService;
     }
 
-    // Общие данные блога
     @GetMapping("/init")
     public ResponseEntity<InitResponse> init() {
         return new ResponseEntity<>(settingsService.init(), HttpStatus.OK);
     }
 
-    // Получение настроек
     @GetMapping("/settings")
     public ResponseEntity<SettingsResponse> getSettings() {
         try {
@@ -64,7 +62,6 @@ public class ApiGeneralController {
         }
     }
 
-    // Сохранение настроек
     @PutMapping("/settings")
     public void saveSettings(@RequestBody SettingsResponse settingsResponse) {
         try {
@@ -75,13 +72,11 @@ public class ApiGeneralController {
         }
     }
 
-    // Получение списка тэгов
     @GetMapping("/tag")
-    public ResponseEntity<TagListResponse> tags() {
+    public ResponseEntity<TagListResponse> getListOfTags() {
         return new ResponseEntity<>(tagService.tags(), HttpStatus.OK);
     }
 
-    // Загрузка изображений
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> loadImage(MultipartFile image) {
         try {
@@ -95,9 +90,8 @@ public class ApiGeneralController {
         }
     }
 
-    // Отправка комментария к посту
     @PostMapping("/comment")
-    public ResponseEntity<?> comment(@RequestBody CommentRequest commentRequest) {
+    public ResponseEntity<?> SetPostComment(@RequestBody CommentRequest commentRequest) {
         try {
             return new ResponseEntity<>(postService.addComment(commentRequest), HttpStatus.OK);
 
@@ -111,9 +105,8 @@ public class ApiGeneralController {
         }
     }
 
-    // Модерация поста
     @PostMapping("/moderation")
-    public ResponseEntity<ResultResponse> moderation(@RequestBody ModerationRequest request) {
+    public ResponseEntity<ResultResponse> moderatePost(@RequestBody ModerationRequest request) {
         try {
             postService.moderate(request.getPostId(), request.getDecision());
         }
@@ -125,13 +118,11 @@ public class ApiGeneralController {
         return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
     }
 
-    // Календарь (количество публикаций)
     @GetMapping("/calendar")
-    public ResponseEntity<CalendarResponse> calendar(int year) {
+    public ResponseEntity<CalendarResponse> getPostsByYear(int year) {
         return new ResponseEntity<>(postService.getAllPostsForCalendar(year), HttpStatus.OK);
     }
 
-    // Редактирование моего профиля (с загрузкой фото)
     @PostMapping(value = "/profile/my",
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -159,7 +150,6 @@ public class ApiGeneralController {
         }
     }
 
-    // Редактирование моего профиля (без загрузки фото)
     @PostMapping("profile/my")
     public ResponseEntity<ResultResponse> editMyProfile(@RequestBody ProfileRequest profileRequest) {
         try {
@@ -177,21 +167,19 @@ public class ApiGeneralController {
         }
     }
 
-    // Моя статистика
     @GetMapping("/statistics/my")
-    public ResponseEntity<StatisticsResponse> myStatistics() {
+    public ResponseEntity<StatisticsResponse> getMyStatistics() {
         try {
             return new ResponseEntity<>(userService.getMyStatistics(), HttpStatus.OK);
 
-        } catch (UserNotFoundException | InvalidParameterException e) {
+        } catch (UserNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(HttpStatus.OK);
         }
     }
 
-    // Статистика по всему блогу
     @GetMapping("/statistics/all")
-    public ResponseEntity<StatisticsResponse> allStatistics() {
+    public ResponseEntity<StatisticsResponse> getAllStatistics() {
         try {
             return new ResponseEntity<>(postService.getGlobalStatistics(), HttpStatus.OK);
 

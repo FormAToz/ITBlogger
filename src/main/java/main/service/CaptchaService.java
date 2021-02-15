@@ -40,6 +40,9 @@ public class CaptchaService {
     @Autowired
     private TimeService timeService;
 
+    @Autowired
+    private ImageService imageService;
+
     /**
      * Метод генерирует коды капчи, - отображаемый и секретный, - сохраняет их в базу данных (таблица captcha_codes)
      * и возвращает секретный код secret (поле в базе данных secret_code) и изображение размером 100х35
@@ -64,11 +67,7 @@ public class CaptchaService {
         Cage cage = new GCage();
         String captcha = cage.getTokenGenerator().next();
         String captchaSecret = Base64.getEncoder().encodeToString(captcha.getBytes());
-        BufferedImage scaledImage = resizeImage(cage.drawImage(captcha), height, width);
-
-        StringBuilder sb = new StringBuilder(imageUrl);
-        sb.append(", ")
-                .append(Base64.getEncoder().encodeToString(imageToBytes(scaledImage)));
+        BufferedImage scaledImage = imageService.resizeImage(cage.drawImage(captcha), height, width);
 
         CaptchaCode captchaCode = new CaptchaCode();
         captchaCode.setTime(LocalDateTime.now());
@@ -76,48 +75,21 @@ public class CaptchaService {
         captchaCode.setSecretCode(captchaSecret);
         captchaCodeRepository.save(captchaCode);
 
-        return new CaptchaResponse(captchaSecret, sb.toString());
+        String captchaImageUrl = imageUrl + ", " +
+                Base64.getEncoder().encodeToString(imageService.imageToBytes(scaledImage, format));
+        return new CaptchaResponse(captchaSecret, captchaImageUrl);
     }
 
     /**
      * Метод удаления всех кодов с истекшим сроком действия
      */
     private void deleteAllExpiredCaptcha() {
+        // TODO убрать List. Сделать стирание записей на уровне бд
         List<CaptchaCode> codeList = captchaCodeRepository.findAllExpiredCodes(timeService.getNowMinusCaptchaExpirationTime());
 
         if (!codeList.isEmpty()) {
             captchaCodeRepository.deleteAll(codeList);
         }
-    }
-
-    /**
-     * Метод изменения размера изображения
-     */
-    private BufferedImage resizeImage(BufferedImage image, int newHeight, int newWidth) {
-        BufferedImage outputImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
-        Image resultingImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_DEFAULT);
-
-        outputImage.getGraphics().drawImage(resultingImage, 0, 0, null);
-
-        return outputImage;
-    }
-
-    /**
-     * Метод преобразования изображения в массив байтов
-     */
-    private byte[] imageToBytes(BufferedImage image) {
-        byte[] bytes = new byte[0];
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            ImageIO.write(image, format, baos);
-            baos.flush();
-            bytes = baos.toByteArray();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return bytes;
     }
 
     /**

@@ -31,6 +31,7 @@ public class TagService {
      * weight вычисляется по формуле: кол-во вхождений тэга / количество вхождений самого популярного тэга
      */
     public TagListResponse tags() {
+        // TODO Лист не переполнится? Сменить?
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();
@@ -62,6 +63,7 @@ public class TagService {
      * Если тэг есть в базе, берем его оттуда, иначе перекладываем из непроверенного списка.
      */
     public List<Tag> checkDuplicatesInRepo(List<Tag> uncheckedList) {
+        // TODO вероятно, изменить логику
         List<Tag> checkedList = new ArrayList<>();
 
         for (Tag tag : uncheckedList) {

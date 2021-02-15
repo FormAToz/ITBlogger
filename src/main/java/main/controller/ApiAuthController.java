@@ -32,15 +32,12 @@ public class ApiAuthController {
 
     private final UserService userService;
     private final CaptchaService captchaService;
-    private final SettingsService settingsService;
 
-    public ApiAuthController(UserService userService, CaptchaService captchaService, SettingsService settingsService) {
+    public ApiAuthController(UserService userService, CaptchaService captchaService) {
         this.userService = userService;
         this.captchaService = captchaService;
-        this.settingsService = settingsService;
     }
 
-    // Регистрация
     @PostMapping("/register")
     public ResponseEntity<ResultResponse> register(@RequestBody AuthorizationRequest authorizationRequest) {
         try {
@@ -52,7 +49,6 @@ public class ApiAuthController {
         }
     }
 
-    // Статус авторизации
     @GetMapping("/check")
     public ResponseEntity<ResultResponse> authStatus(HttpServletRequest request) {
         try {
@@ -64,7 +60,6 @@ public class ApiAuthController {
         }
     }
 
-    // Вход
     @PostMapping("/login")
     public ResponseEntity<ResultResponse> logIn(@RequestBody LoginRequest loginRequest) {
         try {
@@ -76,15 +71,13 @@ public class ApiAuthController {
         }
     }
 
-    // Выход
     @GetMapping("/logout")
-    public ResponseEntity<ResultResponse> logout() {
+    public ResponseEntity<ResultResponse> logOut() {
         return new ResponseEntity<>(userService.logout(), HttpStatus.OK);
     }
 
-    // Восстановление пароля
     @PostMapping("/restore")
-    public ResponseEntity<ResultResponse> restore(@RequestBody EmailRequest emailRequest) {
+    public ResponseEntity<ResultResponse> restorePassword(@RequestBody EmailRequest emailRequest) {
         try {
             return new ResponseEntity<>(userService.restorePassword(emailRequest), HttpStatus.OK);
 
@@ -94,18 +87,19 @@ public class ApiAuthController {
         }
     }
 
-    // Изменение пароля
     @PostMapping("/password")
-    public ResponseEntity<ResultResponse> password(@RequestBody AuthorizationRequest authorizationRequest) {
-        System.out.println(authorizationRequest.getCode());
-        System.out.println(authorizationRequest.getPassword());
-        // TODO проверить параметры с фронта
-        return new ResponseEntity<>(userService.changePassword(authorizationRequest), HttpStatus.OK);
+    public ResponseEntity<ResultResponse> changePassword(@RequestBody AuthorizationRequest authorizationRequest) {
+        try {
+            return new ResponseEntity<>(userService.changePassword(authorizationRequest), HttpStatus.OK);
+
+        } catch (InvalidParameterException e) {
+            return new ResponseEntity<>(
+                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.OK);
+        }
     }
 
-    // Запрос каптчи
     @GetMapping("/captcha")
-    public ResponseEntity<CaptchaResponse> getCaptcha() {
+    public ResponseEntity<CaptchaResponse> getCaptchaCode() {
         return new ResponseEntity<>(captchaService.generateCaptcha(), HttpStatus.OK);
     }
 }

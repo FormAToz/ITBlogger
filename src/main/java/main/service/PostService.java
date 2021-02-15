@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -49,8 +50,10 @@ public class PostService {
     private VoteService voteService;
     @Autowired
     private SettingsService settingsService;
-
-    //TODO переделать все посты с List на Pageable
+    @Value("${post.active-value}")
+    private int activeValue;
+    @Value("${post.unactive-value}")
+    private int unActiveValue;
 
     /**
      * Метод получает любой пост из репозитория по id
@@ -147,7 +150,6 @@ public class PostService {
         return new ResultResponse(true);
     }
 
-
     /**
      * Метод поиска постов по запросу
      *
@@ -157,10 +159,10 @@ public class PostService {
      * @param query  - поисковый запрос
      */
     public PostCountResponse searchPosts(int offset, int limit, String query) {
+        // TODO сменить на pageable
         List<Post> foundedPosts = postRepository.findFilteredPostsByQuery(query);
         return countPosts(foundedPosts, offset, limit);
     }
-
 
     /**
      * Метод получения поста по id
@@ -181,7 +183,6 @@ public class PostService {
                 .tags(tagService.migrateToListTagName(post))
                 .viewCount(incrementViews(user, post));
     }
-
 
     /**
      * Метод изменяет данные поста с идентификатором ID на те, которые пользователь ввёл в форму публикации.
@@ -225,16 +226,14 @@ public class PostService {
         return new ResultResponse(true);
     }
 
-
     /**
      * Метод проверки отображения поста.
      *
      * true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
      */
     private boolean isActive(Post post) {
-        return post.getActive() == 1;
+        return post.getActive() == activeValue;
     }
-
 
     /**
      * Метод увеличения кол-ва просмотров
@@ -250,7 +249,6 @@ public class PostService {
         return viewCount;
     }
 
-
     /**
      * Метод получения списка постов по тэгу
      * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
@@ -259,9 +257,9 @@ public class PostService {
      * @param tagName - тэг, по которому нужно вывести все посты
      */
     public PostCountResponse getPostsByTag(int offset, int limit, String tagName) {
+        // TODO сменить на pageable
         return countPosts(postRepository.findFilteredPostsByTag(tagName), offset, limit);
     }
-
 
     /**
      * Метод выводит все посты, которые требуют модерационных действий (которые нужно утвердить или отклонить)
@@ -275,9 +273,9 @@ public class PostService {
      *               accepted - утверждённые мной
      */
     public PostCountResponse getPostsForModeration(int offset, int limit, String status) {
+        // TODO сменить на pageable
         return countPosts(postRepository.findAllPostsForModerationByStatus(status), offset, limit);
     }
-
 
     /**
      * Метод подсчета всех постов, ожидающих модерации
@@ -285,7 +283,6 @@ public class PostService {
     public long countPostsForModeration() {
         return postRepository.countAllPostsForModeration().orElse(0L);
     }
-
 
     /**
      * Метод фиксирует действие модератора по посту: его утверждение или отклонение.
@@ -313,7 +310,6 @@ public class PostService {
         return true;
     }
 
-
     /**
      * Метод устанавливает новый статус посту, если статус найден. В противном случае возвращает старый статус.
      */
@@ -329,7 +325,6 @@ public class PostService {
                 return oldStatus;
         }
     }
-
 
     /**
      * Метод получения списка постов авторизированного юзера (в соответствии с полем user_id в таблице posts базы данных).
@@ -349,24 +344,23 @@ public class PostService {
 
         switch (status) {
             case "inactive":
-                list = postRepository.findByUserAndActive(user, 0);
+                list = postRepository.findByUserAndActive(user, unActiveValue);
                 break;
 
             case "pending":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.NEW);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW);
                 break;
 
             case "declined":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.DECLINED);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED);
                 break;
 
             case "published":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, 1, Post.ModerationStatus.ACCEPTED);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED);
                 break;
         }
         return countPosts(list, offset, limit);
     }
-
 
     /**
      * Метод выводит количества публикаций на каждую дату переданного в параметре year года или текущего года,
@@ -380,13 +374,13 @@ public class PostService {
      * @param year - год в виде четырёхзначного числа, если не передан - возвращать за текущий год
      */
     public CalendarResponse getAllPostsForCalendar(int year) {
-        List<Integer> years = postRepository.findAllPostsByYears();
-        List<Object[]> allRecordsByYearFromRepo = postRepository.getAllRecordsByYear(year);
-        Map<String, Long> allRecordsByYear = new HashMap<>();
-
         if (year == 0) {
             year = LocalDateTime.now().getYear();
         }
+
+        List<Integer> years = postRepository.findAllPostsByYears();
+        List<Object[]> allRecordsByYearFromRepo = postRepository.getAllRecordsByYear(year);
+        Map<String, Long> allRecordsByYear = new HashMap<>();
 
         allRecordsByYearFromRepo.forEach(el -> {
             String date = (String) el[0];   // date - "2019-12-17"
@@ -397,7 +391,6 @@ public class PostService {
         return new CalendarResponse(years, allRecordsByYear);
     }
 
-
     /**
      * Метод получения списка постов за указанную дату
      * Выводит посты за указанную дату, переданную в запросе в параметре date.
@@ -406,9 +399,9 @@ public class PostService {
      * @param date   - дата в формате "2019-10-15"
      */
     public PostCountResponse getPostsByDate(int offset, int limit, String date) {
+        // TODO сменить на pageable
         return countPosts(postRepository.getPostsByDate(date), offset, limit);
     }
-
 
     /**
      * Метод преобразования к количеству и списку постов для отображения
@@ -420,12 +413,9 @@ public class PostService {
         list.stream()
                 .skip(offset)
                 .limit(limit)
-                .forEach(post -> {
-                    postsList.add(migrateToPostResponse(new PostResponse(), post));
-                });
+                .forEach(post -> postsList.add(migrateToPostResponse(new PostResponse(), post)));
         return new PostCountResponse(count, postsList);
     }
-
 
     /**
      * Метод преобразования post -> postResponse
@@ -446,7 +436,6 @@ public class PostService {
 
         return postResponse;
     }
-
 
     /**
      * Метод выдаёт статистику по всем постам блога.
@@ -470,7 +459,6 @@ public class PostService {
                 .viewsCount(postRepository.countAllViewsFromPosts().orElse(0L))
                 .firstPublication(timeService.getTimestampFromLocalDateTime(postRepository.getTimeOfFirstPost()));
     }
-
 
     /**
      * Метод добавляет комментарий к посту. Должны проверяться все три параметра.
@@ -524,7 +512,6 @@ public class PostService {
         return new IdResponse(comment.getId());
     }
 
-
     /**
      * Поиск постов, доступных для чтения, конкретного пользователя.
      *
@@ -535,7 +522,6 @@ public class PostService {
         return postRepository.countFilteredPostsByUser(user).orElse(0L);
     }
 
-
     /**
      * Сумма всех просмотров постов, доступных для чтения, у конкретного пользователя.
      *
@@ -545,7 +531,6 @@ public class PostService {
     public long countViewsFromPostsByUser(User user) {
         return postRepository.countViewsFromPostsByUser(user).orElse(0L);
     }
-
 
     /**
      * Получение времени первой публикации у конкретного пользователя.
