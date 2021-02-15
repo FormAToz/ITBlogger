@@ -1,6 +1,7 @@
 package main.service;
 
 import main.Main;
+import main.api.request.EmailRequest;
 import main.api.request.ProfileRequest;
 import main.api.request.auth.AuthorizationRequest;
 import main.api.request.auth.LoginRequest;
@@ -21,17 +22,17 @@ import org.apache.logging.log4j.MarkerManager;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -55,9 +56,14 @@ public class UserService {
     private VoteService voteService;
     @Autowired
     private ImageService imageService;
+    @Autowired
+    private MailService mailService;
 
     @Value("${photo.delete-value}")
-    int photoDeleteValue;
+    private int photoDeleteValue;
+
+    @Value("${root-domain}")
+    private String rootDomain;
 
     /**
      * Создание тестового юзера
@@ -231,7 +237,7 @@ public class UserService {
      */
     public ResultResponse logIn(LoginRequest loginRequest) throws UserNotFoundException, InvalidParameterException {
         // ищем пользователя по имейл
-        User user = userRepository.findByEmail(loginRequest.getEmail())
+        User user = userRepository.findByEmailIgnoreCase(loginRequest.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с E-mail: " + loginRequest.getEmail() + " не зарегистрирован"));
 
         // сверяем пароль
@@ -276,16 +282,21 @@ public class UserService {
      * где HASH - сгенерированный код вида b55ca6ea6cb103c6384cfa366b7ce0bdcac092be26bc0
      * (код должен генерироваться случайным образом и сохраняться в базе данных в поле users.code).
      *
-     * @param email - e-mail пользователя
+     * @param emailRequest - e-mail, на который отправится информация о восстановлении пароля
      */
-    public ResponseEntity<ResultResponse> restorePassword(String email) {
-        // TODO
-        if (true) {
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
+    public ResultResponse restorePassword(EmailRequest emailRequest) throws UserNotFoundException, MessagingException {
+        User user = userRepository.findByEmailIgnoreCase(emailRequest.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с E-mail: " + emailRequest.getEmail() + " не зарегистрирован"));
+        String hash = UUID.randomUUID().toString();
+        String link = rootDomain + "/login/change-password/" + hash;
+        String subject = "Код активации аккаунта ITBlogger";
+        String message = "Для восстановления пароля перейдите по <a href=" + link + ">ссылке</a>";
+
+        user.setCode(hash);
+        userRepository.save(user);
+        mailService.send(emailRequest.getEmail(), subject, message);
+
+        return new ResultResponse(true);
     }
 
     /**
@@ -298,15 +309,13 @@ public class UserService {
      * captcha - код капчи
      * captcha_secret - секретный код капчи
      */
-    public ResponseEntity<ResultResponse> changePassword(AuthorizationRequest authorizationRequest) {
+    public ResultResponse changePassword(AuthorizationRequest authorizationRequest) {
         //TODO
         if (true) {
-            return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+            return new ResultResponse(true);
         }
         else {
-            Map<String, String> errors = new HashMap<>();
-
-            return new ResponseEntity<>(new ErrorResultResponse(false, errors), HttpStatus.OK);
+            return new ErrorResultResponse(false, Map.of());
         }
     }
 

@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class DefaultController {
 
-    // TODO изучить
     @RequestMapping(method = {RequestMethod.OPTIONS, RequestMethod.GET}, value = "/**/{path:[^\\.]*}")
     public String index() {
         return "forward:/";

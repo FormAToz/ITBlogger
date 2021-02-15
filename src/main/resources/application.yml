@@ -14,6 +14,15 @@ spring:
     multipart:
       max-file-size: -1  #Makes handling file size on a controller level
       max-request-size: -1
+  mail:
+    protocol: smtps
+    host: smtp.gmail.com
+    port: 465
+    username: app.autosender@gmail.com
+    password: 17122020Dec!$
+
+mail:
+  debug: false   #Disable in production!
 
 #Captcha service properties
 captcha:
@@ -39,3 +48,5 @@ file:
 #Application values
 photo:
   delete-value: 1
+
+root-domain: http://localhost:8080

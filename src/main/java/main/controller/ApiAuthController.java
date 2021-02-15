@@ -1,6 +1,7 @@
 package main.controller;
 
 import main.Main;
+import main.api.request.EmailRequest;
 import main.api.request.auth.AuthorizationRequest;
 import main.api.request.auth.LoginRequest;
 import main.api.response.CaptchaResponse;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
@@ -82,16 +84,23 @@ public class ApiAuthController {
 
     // Восстановление пароля
     @PostMapping("/restore")
-    public ResponseEntity<ResultResponse> restore(String email) {
-        // TODO проверить параметры с фронта
-        return userService.restorePassword(email);
+    public ResponseEntity<ResultResponse> restore(@RequestBody EmailRequest emailRequest) {
+        try {
+            return new ResponseEntity<>(userService.restorePassword(emailRequest), HttpStatus.OK);
+
+        } catch (UserNotFoundException | MessagingException e) {
+            LOGGER.info(MARKER, e.getMessage());
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
     }
 
     // Изменение пароля
     @PostMapping("/password")
     public ResponseEntity<ResultResponse> password(@RequestBody AuthorizationRequest authorizationRequest) {
+        System.out.println(authorizationRequest.getCode());
+        System.out.println(authorizationRequest.getPassword());
         // TODO проверить параметры с фронта
-        return userService.changePassword(authorizationRequest);
+        return new ResponseEntity<>(userService.changePassword(authorizationRequest), HttpStatus.OK);
     }
 
     // Запрос каптчи
