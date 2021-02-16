@@ -28,15 +28,15 @@ import java.util.List;
  * }
  */
 public class PostCountResponse {
-    private final int count;
+    private final long count;
     private final List<PostResponse> posts;
 
-    public PostCountResponse(int count, List<PostResponse> posts) {
+    public PostCountResponse(long count, List<PostResponse> posts) {
         this.count = count;
         this.posts = posts;
     }
 
-    public int getCount() {
+    public long getCount() {
         return count;
     }
 

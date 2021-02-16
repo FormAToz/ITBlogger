@@ -22,8 +22,10 @@ public class SettingsService {
     private String postPreModeration;
     @Value("${settings.statistics-is-public}")
     private String statisticsIsPublic;
-    @Value("${settings.default-value}")
-    private String defaultValue;
+    @Value("${settings.on-value}")
+    private String onValue;
+    @Value("${settings.off-value}")
+    private String offValue;
 
     @Autowired
     private GlobalSettingsRepository settingsRepository;
@@ -49,10 +51,18 @@ public class SettingsService {
     @PostConstruct
     private void initSettings() {
         if (settingsRepository.count() == 0) {
-            generateAndSave(multiUserMode, "Многопользовательский режим", defaultValue);
-            generateAndSave(postPreModeration, "Премодерация постов", defaultValue);
-            generateAndSave(statisticsIsPublic, "Показывать всем статистику блога", defaultValue);
+            generateAndSave(multiUserMode, "Многопользовательский режим", onValue);
+            generateAndSave(postPreModeration, "Премодерация постов", onValue);
+            generateAndSave(statisticsIsPublic, "Показывать всем статистику блога", onValue);
         }
+    }
+
+    /**
+     * Метод проверяет включена ли премодерация постов
+     * @return true, если включена или false, если отключена
+     */
+    public boolean preModerationIsOn() {
+        return settingsRepository.existsByCodeAndValueIgnoreCase(postPreModeration, onValue);
     }
 
     /**

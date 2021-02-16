@@ -22,13 +22,13 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -75,12 +75,13 @@ public class PostService {
      * @throws PostNotFoundException в случае, если пост не найден
      */
     public Post getActiveAndAcceptedPostById(int id) throws PostNotFoundException {
-        return postRepository.findFilteredPostById(id)
+        return postRepository.findAvailablePostById(id)
                 .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
     }
 
     /**
-     * Список всех постов
+     * Список всех постов. Должны выводиться только активные (поле is_active в таблице posts равно 1),
+     * утверждённые модератором (поле moderation_status равно ACCEPTED) посты с датой публикации не позднее текущего момента.
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
      * @param mode   - режим вывода (сортировка):
@@ -89,36 +90,28 @@ public class PostService {
      *               best - сортировать по убыванию количества лайков
      *               early - сортировать по дате публикации, выводить сначала старые
      */
-    public PostCountResponse getPosts(int offset, int limit, String mode) {
-        List<Post> filteredPosts = sortFilteredPosts(postRepository.findAllFilteredPosts(), mode);
+    public PostCountResponse getAllSortedPosts(int offset, int limit, String mode) {
+        List<Post> posts = new ArrayList<>();
+        Pageable pageable;
+        long count = postRepository.countAllAvailablePosts().orElse(0L);
 
-        return countPosts(filteredPosts, offset, limit);
-    }
+        if (mode.equals("recent")) {    // Сортировать по дате публикации, выводить сначала новые
+            pageable = PageRequest.of(offset / limit, limit, Sort.by("time").descending());
+            posts = postRepository.findAllAvailablePosts(pageable);
 
-    /**
-     * Выбор сортировки отображаемых постов
-     */
-    private List<Post> sortFilteredPosts(List<Post> list, String mode) {
-        Comparator<Post> postComparator = null;
+        }else if (mode.equals("popular")) {   // Сортировать по убыванию количества комментариев
+            pageable = PageRequest.of(offset / limit, limit);
+            posts = postRepository.findAvailablePostsByCommentCount(pageable);
 
-        // Сортировать по дате публикации, выводить сначала новые
-        if (mode.equals("recent")) {
-            postComparator = Comparator.comparing(Post::getTime).reversed();
-        }
-        // Сортировать по убыванию количества комментариев
-        if (mode.equals("popular")) {
-            postComparator = Comparator.comparing((Post post) -> post.getComments().size()).reversed();
-        }
-        // Сортировать по убыванию количества лайков
-        if (mode.equals("best")) {
-            // TODO реализовать сортирвку по убыванию количества лайков
-        }
-        // Сортировать по дате публикации, выводить сначала старые
-        if (mode.equals("early")) {
-            postComparator = Comparator.comparing(Post::getTime);
-        }
+        }else if (mode.equals("best")) {  // Сортировать по убыванию количества лайков
+            pageable = PageRequest.of(offset / limit, limit);
+            posts = postRepository.findAvailablePostsByVoteValue(pageable);
 
-        return list.stream().sorted(postComparator).collect(Collectors.toList());
+        }else if (mode.equals("early")) {     // Сортировать по дате публикации, выводить сначала старые
+            pageable = PageRequest.of(offset / limit, limit, Sort.by("time").ascending());
+            posts = postRepository.findAllAvailablePosts(pageable);
+        }
+        return migrateToPostCountResponse(count, posts);
     }
 
     /**
@@ -134,11 +127,15 @@ public class PostService {
         Post post = new Post();
 
         textService.checkTitleAndTextLength(request.getTitle(), request.getText());
+        if (settingsService.preModerationIsOn()) {
+            post.setModerationStatus(Post.ModerationStatus.NEW);
+        }else {
+            post.setModerationStatus(Post.ModerationStatus.ACCEPTED);
+        }
         post.setActive(request.getActive());
         post.setUser(user);
         post.setTags(tagService.checkDuplicatesInRepo(request.getTags()));
         post.setTime(timeService.getExpectedTime(request.getTimestamp()));
-        post.setModerationStatus(Post.ModerationStatus.NEW);
         post.setTitle(request.getTitle());
         post.setText(request.getText());
         post.setViewCount(0);
@@ -159,9 +156,10 @@ public class PostService {
      * @param query  - поисковый запрос
      */
     public PostCountResponse searchPosts(int offset, int limit, String query) {
-        // TODO сменить на pageable
-        List<Post> foundedPosts = postRepository.findFilteredPostsByQuery(query);
-        return countPosts(foundedPosts, offset, limit);
+        long count = postRepository.countAllAvailablePostsByQuery(query).orElse(0L);
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<Post> foundedPosts = postRepository.findAvailablePostsByQuery(query, pageable);
+        return migrateToPostCountResponse(count, foundedPosts);
     }
 
     /**
@@ -257,8 +255,10 @@ public class PostService {
      * @param tagName - тэг, по которому нужно вывести все посты
      */
     public PostCountResponse getPostsByTag(int offset, int limit, String tagName) {
-        // TODO сменить на pageable
-        return countPosts(postRepository.findFilteredPostsByTag(tagName), offset, limit);
+        long count = postRepository.countAvailablePostsByTag(tagName).orElse(0L);
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<Post> posts = postRepository.findAvailablePostsByTag(tagName, pageable);
+        return migrateToPostCountResponse(count, posts);
     }
 
     /**
@@ -273,15 +273,17 @@ public class PostService {
      *               accepted - утверждённые мной
      */
     public PostCountResponse getPostsForModeration(int offset, int limit, String status) {
-        // TODO сменить на pageable
-        return countPosts(postRepository.findAllPostsForModerationByStatus(status), offset, limit);
+        long count = postRepository.countAllActivePostsByStatus(status).orElse(0L);
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<Post> posts = postRepository.findAllActivePostsByStatus(status, pageable);
+        return migrateToPostCountResponse(count, posts);
     }
 
     /**
      * Метод подсчета всех постов, ожидающих модерации
      */
     public long countPostsForModeration() {
-        return postRepository.countAllPostsForModeration().orElse(0L);
+        return postRepository.countAllActiveAndUnmoderatedPosts().orElse(0L);
     }
 
     /**
@@ -340,26 +342,32 @@ public class PostService {
      */
     public PostCountResponse getMyPosts(int offset, int limit, String status) throws UserNotFoundException {
         User user = userService.getUserFromSession();
+        Pageable pageable = PageRequest.of(offset / limit, limit);;
         List<Post> list = new ArrayList<>();
+        long count = 0L;
 
         switch (status) {
             case "inactive":
-                list = postRepository.findByUserAndActive(user, unActiveValue);
+                count = postRepository.countByUserAndActive(user, unActiveValue).orElse(0L);
+                list = postRepository.findByUserAndActive(user, unActiveValue, pageable);
                 break;
 
             case "pending":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW);
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW, pageable);
                 break;
 
             case "declined":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED);
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED, pageable);
                 break;
 
             case "published":
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED);
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED, pageable);
                 break;
         }
-        return countPosts(list, offset, limit);
+        return migrateToPostCountResponse(count, list);
     }
 
     /**
@@ -378,8 +386,8 @@ public class PostService {
             year = LocalDateTime.now().getYear();
         }
 
-        List<Integer> years = postRepository.findAllPostsByYears();
-        List<Object[]> allRecordsByYearFromRepo = postRepository.getAllRecordsByYear(year);
+        List<Integer> years = postRepository.findAllAvailablePostsByYears();
+        List<Object[]> allRecordsByYearFromRepo = postRepository.getAllAvailablePostsForYear(year);
         Map<String, Long> allRecordsByYear = new HashMap<>();
 
         allRecordsByYearFromRepo.forEach(el -> {
@@ -399,21 +407,23 @@ public class PostService {
      * @param date   - дата в формате "2019-10-15"
      */
     public PostCountResponse getPostsByDate(int offset, int limit, String date) {
-        // TODO сменить на pageable
-        return countPosts(postRepository.getPostsByDate(date), offset, limit);
+        long count = postRepository.countAllAvailablePostsByDate(date).orElse(0L);
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<Post> posts = postRepository.findAllAvailablePostsByDate(date, pageable);
+
+        return migrateToPostCountResponse(count, posts);
     }
 
     /**
-     * Метод преобразования к количеству и списку постов для отображения
+     * Метод преобразования списка Post к списку PostCountResponse
+     * @param count количество всех постов в базе данных, выбранных по определенному фильтру
+     * @param list лимитированный список объектов Post, выбранных из базы данных
+     * @return список объектов PostCountResponse
      */
-    private PostCountResponse countPosts(List<Post> list, int offset, int limit) {
+    private PostCountResponse migrateToPostCountResponse(long count, List<Post> list) {
         List<PostResponse> postsList = new ArrayList<>();
-        int count = list.size();        // кол-во постов
 
-        list.stream()
-                .skip(offset)
-                .limit(limit)
-                .forEach(post -> postsList.add(migrateToPostResponse(new PostResponse(), post)));
+        list.stream().forEach(post -> postsList.add(migrateToPostResponse(new PostResponse(), post)));
         return new PostCountResponse(count, postsList);
     }
 
@@ -453,10 +463,10 @@ public class PostService {
         }
 
         return new StatisticsResponse()
-                .postsCount(postRepository.countFilteredPosts().orElse(0L))
+                .postsCount(postRepository.countAllActivePosts().orElse(0L))
                 .likesCount(voteService.countAllLikes())
                 .dislikesCount(voteService.countAllDislikes())
-                .viewsCount(postRepository.countAllViewsFromPosts().orElse(0L))
+                .viewsCount(postRepository.countAllViewsFromAvailablePosts().orElse(0L))
                 .firstPublication(timeService.getTimestampFromLocalDateTime(postRepository.getTimeOfFirstPost()));
     }
 
@@ -519,7 +529,7 @@ public class PostService {
      * @return - число постов, доступных для чтения
      */
     public long countPostsByUser(User user) {
-        return postRepository.countFilteredPostsByUser(user).orElse(0L);
+        return postRepository.countAllAvailablePostsByUser(user).orElse(0L);
     }
 
     /**
@@ -529,7 +539,7 @@ public class PostService {
      * @return - сумма просмотров всех постов
      */
     public long countViewsFromPostsByUser(User user) {
-        return postRepository.countViewsFromPostsByUser(user).orElse(0L);
+        return postRepository.countViewsFromAllPostsByUser(user).orElse(0L);
     }
 
     /**

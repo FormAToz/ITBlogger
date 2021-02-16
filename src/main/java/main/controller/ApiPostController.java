@@ -38,7 +38,7 @@ public class ApiPostController {
 
     @GetMapping
     public ResponseEntity<PostCountResponse> getAllPosts(int offset, int limit, String mode) {
-        return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
+        return new ResponseEntity<>(postService.getAllSortedPosts(offset, limit, mode), HttpStatus.OK);
     }
 
     @PostMapping

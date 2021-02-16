@@ -71,4 +71,5 @@ settings:
   multiuser-mode: MULTIUSER_MODE
   post-premoderation: POST_PREMODERATION
   statistics-is-public: STATISTICS_IS_PUBLIC
-  default-value: YES
+  on-value: 'YES'
+  off-value: 'NO'

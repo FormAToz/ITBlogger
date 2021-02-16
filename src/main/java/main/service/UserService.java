@@ -70,21 +70,6 @@ public class UserService {
     private String restorePasswordSubAddress;
 
     /**
-     * Создание тестового юзера
-     */
-    public void createTestUser() {
-        // TODO сделать дефолтного админа через миграцию бд
-        User u = new User();
-        u.setName("Андрей Данилов");
-        u.setEmail("7.danilov@gmail.com");
-        u.setRegTime(LocalDateTime.now().plusHours(3));
-        u.setPhoto("a/b/c.jpeg");
-        u.setPassword(encodePassword("123456"));
-        u.setIsModerator(moderatorValue);
-        userRepository.save(u);
-    }
-
-    /**
      * Метод получения пользователя из репозитория
      *
      * @param id - Id пользователя
