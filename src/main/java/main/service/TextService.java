@@ -14,8 +14,8 @@ public class TextService {
     private int minTitleLength;
     @Value("${text.min-text-length}")
     private int minTextLength;
-    @Value("${text.min-announce-text-length}")
-    private int minAnnounceTextLength;
+    @Value("${text.max-announce-text-length}")
+    private int maxAnnounceTextLength;
     @Value("${text.min-comment-length}")
     private int minCommentLength;
     @Value("${text.min-password-length}")
@@ -34,8 +34,8 @@ public class TextService {
      * Анонс поста (кусок текста) с проверкой кол-ва символов без HTML тэгов
      */
     public String getAnnounce(String text) {
-        String postAnnounce = (text.length() > minAnnounceTextLength)
-                ? text.substring(0, minAnnounceTextLength).concat("...")
+        String postAnnounce = (text.length() > maxAnnounceTextLength)
+                ? text.substring(0, maxAnnounceTextLength).concat("...")
                 : text;
 
         return postAnnounce.replaceAll("(<.*?>)|(&.*?;)|([ ]{2,})", " ");

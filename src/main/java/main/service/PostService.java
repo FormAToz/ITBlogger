@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -92,24 +93,24 @@ public class PostService {
      */
     public PostCountResponse getAllSortedPosts(int offset, int limit, String mode) {
         List<Post> posts = new ArrayList<>();
-        Pageable pageable;
+        Pageable pageable = PageRequest.of(offset / limit, limit);
         long count = postRepository.countAllAvailablePosts().orElse(0L);
 
-        if (mode.equals("recent")) {    // Сортировать по дате публикации, выводить сначала новые
-            pageable = PageRequest.of(offset / limit, limit, Sort.by("time").descending());
-            posts = postRepository.findAllAvailablePosts(pageable);
-
-        }else if (mode.equals("popular")) {   // Сортировать по убыванию количества комментариев
-            pageable = PageRequest.of(offset / limit, limit);
-            posts = postRepository.findAvailablePostsByCommentCount(pageable);
-
-        }else if (mode.equals("best")) {  // Сортировать по убыванию количества лайков
-            pageable = PageRequest.of(offset / limit, limit);
-            posts = postRepository.findAvailablePostsByVoteValue(pageable);
-
-        }else if (mode.equals("early")) {     // Сортировать по дате публикации, выводить сначала старые
-            pageable = PageRequest.of(offset / limit, limit, Sort.by("time").ascending());
-            posts = postRepository.findAllAvailablePosts(pageable);
+        switch (mode) {
+            case "recent":     // Сортировать по дате публикации, выводить сначала новые
+                pageable = PageRequest.of(offset / limit, limit, Sort.by("time").descending());
+                posts = postRepository.findAllAvailablePosts(pageable);
+                break;
+            case "popular":    // Сортировать по убыванию количества комментариев
+                posts = postRepository.findAvailablePostsByCommentCount(pageable);
+                break;
+            case "best":   // Сортировать по убыванию количества лайков
+                posts = postRepository.findAvailablePostsByVoteValue(pageable);
+                break;
+            case "early":      // Сортировать по дате публикации, выводить сначала старые
+                pageable = PageRequest.of(offset / limit, limit, Sort.by("time").ascending());
+                posts = postRepository.findAllAvailablePosts(pageable);
+                break;
         }
         return migrateToPostCountResponse(count, posts);
     }
@@ -123,7 +124,7 @@ public class PostService {
      * Пост должен сохраняться со статусом модерации NEW.
      */
     public ResultResponse addPost(PostRequest request) throws UserNotFoundException, InvalidParameterException {
-        User user = userService.getUserFromSession();
+        User user = userService.getLoggedUser();
         Post post = new Post();
 
         textService.checkTitleAndTextLength(request.getTitle(), request.getText());
@@ -170,16 +171,14 @@ public class PostService {
      *
      * @param id - id поста
      */
-    public PostFullResponse getPostById(int id) throws UserNotFoundException, PostNotFoundException {
-        User user = userService.getUserFromSession();
+    public PostFullResponse getPostById(int id, Principal principal) throws PostNotFoundException {
         Post post = getById(id);
-
         return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
                 .active(isActive(post))
                 .text(post.getText())
                 .comments(commentService.migrateToCommentResponse(post))
                 .tags(tagService.migrateToListTagName(post))
-                .viewCount(incrementViews(user, post));
+                .viewCount(incrementViews(post, principal));
     }
 
     /**
@@ -204,7 +203,7 @@ public class PostService {
     public ResultResponse updatePost(int id, PostRequest postRequest)
             throws PostNotFoundException, InvalidParameterException, UserNotFoundException {
         Post post = getById(id);
-        User user = userService.getUserFromSession();
+        User user = userService.getLoggedUser();
 
         textService.checkTitleAndTextLength(postRequest.getTitle(), postRequest.getText());
 
@@ -234,16 +233,22 @@ public class PostService {
     }
 
     /**
-     * Метод увеличения кол-ва просмотров
+     * Метод увеличения кол-ва просмотров постов.
      */
-    private int incrementViews(User user, Post post) {
+    private int incrementViews(Post post, Principal principal) {
         int viewCount = post.getViewCount();
 
-        // если пользователь не модератор и не автор
-        if (!userService.isModerator(user) && !userService.isAuthor(user, post)) {
-            post.setViewCount(++viewCount);
-            postRepository.save(post);
+        // если пользователь авторизирован
+        if (principal != null) {
+            User user = userService.getLoggedUser();
+            // не увеличиваем кол-во просмотров, если пользователь модератор или автор
+            if (userService.isModerator(user) || userService.isAuthor(user, post)) {
+                return viewCount;
+            }
         }
+
+        post.setViewCount(++viewCount);
+        postRepository.save(post);
         return viewCount;
     }
 
@@ -295,7 +300,7 @@ public class PostService {
      * @param decision - решение по посту: accept или decline.
      */
     public boolean moderate(int postId, String decision) throws UserNotFoundException, PostNotFoundException {
-        User user = userService.getUserFromSession();
+        User user = userService.getLoggedUser();
 
         if (!userService.isModerator(user)) {
             return false;
@@ -341,8 +346,8 @@ public class PostService {
      *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
     public PostCountResponse getMyPosts(int offset, int limit, String status) throws UserNotFoundException {
-        User user = userService.getUserFromSession();
-        Pageable pageable = PageRequest.of(offset / limit, limit);;
+        User user = userService.getLoggedUser();
+        Pageable pageable = PageRequest.of(offset / limit, limit);
         List<Post> list = new ArrayList<>();
         long count = 0L;
 
@@ -423,7 +428,7 @@ public class PostService {
     private PostCountResponse migrateToPostCountResponse(long count, List<Post> list) {
         List<PostResponse> postsList = new ArrayList<>();
 
-        list.stream().forEach(post -> postsList.add(migrateToPostResponse(new PostResponse(), post)));
+        list.forEach(post -> postsList.add(migrateToPostResponse(new PostResponse(), post)));
         return new PostCountResponse(count, postsList);
     }
 
@@ -436,7 +441,7 @@ public class PostService {
         postResponse
                 .id(post.getId())
                 .timestamp(timeService.getTimestampFromLocalDateTime(post.getTime()))
-                .user(new UserResponse(author.getId(), author.getName()))
+                .user(new UserResponse(author.getId(), author.getName(), author.getPhoto()))
                 .title(post.getTitle())
                 .announce(textService.getAnnounce(post.getText()))
                 .likeCount(voteService.countLikesFromPost(post))
@@ -458,7 +463,7 @@ public class PostService {
     public StatisticsResponse getGlobalStatistics()
             throws ApplicationException, UserNotFoundException {
         // если настройки показа отключены и пользователь не модератор
-        if (!settingsService.globalStatisticsIsAvailable() && !userService.isModerator(userService.getUserFromSession())) {
+        if (!settingsService.globalStatisticsIsAvailable() && !userService.isModerator(userService.getLoggedUser())) {
             throw new ApplicationException("Статистика просмотра всего блога недоступна");
         }
 
@@ -499,7 +504,7 @@ public class PostService {
             throws UserNotFoundException, PostNotFoundException, InvalidParameterException, CommentNotFoundException {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
-        User user = userService.getUserFromSession();
+        User user = userService.getLoggedUser();
         Post post = getActiveAndAcceptedPostById(commentRequest.getPostId());
         PostComment parentComment;
         PostComment comment = new PostComment();

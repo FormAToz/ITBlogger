@@ -18,10 +18,12 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 import java.util.Map;
 
 @RestController
@@ -50,14 +52,9 @@ public class ApiAuthController {
     }
 
     @GetMapping("/check")
-    public ResponseEntity<ResultResponse> authStatus(HttpServletRequest request) {
-        try {
-            return new ResponseEntity<>(userService.authStatus(), HttpStatus.OK);
-
-        } catch (UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
+    public ResponseEntity<ResultResponse> authStatus(Principal principal) {
+        //TODO если 403 ошибка - значит пользователь не авторизирован. возвращать статус ОК вне зависимости от ошибок
+        return new ResponseEntity<>(userService.authStatus(principal), HttpStatus.OK);
     }
 
     @PostMapping("/login")
@@ -72,6 +69,7 @@ public class ApiAuthController {
     }
 
     @GetMapping("/logout")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> logOut() {
         return new ResponseEntity<>(userService.logout(), HttpStatus.OK);
     }

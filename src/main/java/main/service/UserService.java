@@ -18,16 +18,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,11 +43,8 @@ public class UserService {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
 
-    private Map<String, Integer> userIdFromSession = new HashMap<>();
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private HttpServletRequest servletRequest;
     @Autowired
     private TextService textService;
     @Autowired
@@ -57,6 +59,8 @@ public class UserService {
     private ImageService imageService;
     @Autowired
     private MailService mailService;
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @Value("${photo.delete-value}")
     private int photoDeleteValue;
@@ -73,38 +77,49 @@ public class UserService {
      * Метод получения пользователя из репозитория
      *
      * @param id - Id пользователя
-     * @return   - User
+     * @return - User
      * @throws UserNotFoundException - в случае, если пользователь не найден
      */
-    public User getUserById(int id) throws UserNotFoundException{
+    public User getUserById(int id) throws UserNotFoundException {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с id = " + id + " не найден"));
     }
 
     /**
-     * Метод сохраняет отображение Id пользователя/Id сессии
+     * Метод получения пользователя по e-mail
      *
-     * @param userId - Id пользователя
-     * @param sessionId - Id сессии
+     * @param email адрес электронной почты
+     * @return объект User
+     * @throws UserNotFoundException в случае, если пользователя с данным e-mail не существует
      */
-    public void saveUserIdFromSession(int userId, String sessionId) {
-        userIdFromSession.put(sessionId, userId);
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Пользователь с E-mail: " + email + " не зарегистрирован"));
     }
 
     /**
-     * Метод получения Id пользователя из сессии
+     * Метод получения пользователя по коду восстановления пароля.
      *
-     * @return - User
-     * @throws UserNotFoundException - в случае, если пользователь не зарегестрирован в сессии
+     * @param code код восстановления
+     * @return User (пользователя, у которого есть этот код)
+     * @throws InvalidParameterException в случае если пользователь не найден по коду
      */
-    public User getUserFromSession() throws UserNotFoundException {
-        String sessionId = servletRequest.getSession().getId();
-        int userId = userIdFromSession.getOrDefault(sessionId, 0);
+    public User getUserByRecoveryCode(String code) throws InvalidParameterException {
+        return userRepository.getUserByCode(code).orElseThrow(() ->
+                new InvalidParameterException("code", "Ссылка для восстановления пароля устарела. <a href=\"" +
+                        restorePasswordSubAddress + "\">Запросить ссылку снова</a>"));
+    }
 
-        if (userId == 0) {
-            throw new UserNotFoundException("Пользователь не зарегестрирован в сессии - " + sessionId);
-        }
-        return getUserById(userId);
+    /**
+     * Метод получения авторизированного пользователя
+     *
+     * @return - User, авторизированный пользователь
+     */
+    public User getLoggedUser() {
+        //TODO если пользователь не залогинился, то получаем 403 ошибку
+        String loggedUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return getUserByEmail(loggedUserEmail);
     }
 
     /**
@@ -120,6 +135,7 @@ public class UserService {
 
     /**
      * Метод проверки, является ли пользователь автором
+     *
      * @param user - пользователь
      * @param post - пост
      * @return - true или false
@@ -131,10 +147,11 @@ public class UserService {
     /**
      * Метод возвращает статистику постов текущего авторизованного пользователя:
      * общие количества параметров для всех публикаций, у который он является автором и доступные для чтения.
+     *
      * @return - StatisticsResponse
      */
     public StatisticsResponse getMyStatistics() throws UserNotFoundException {
-        User user = getUserFromSession();
+        User user = getLoggedUser();
         LocalDateTime timeOfFirstPost = postService.getTimeOfFirstPostByUser(user);
 
         return new StatisticsResponse()
@@ -149,13 +166,12 @@ public class UserService {
      * Метод создаёт пользователя в базе данных, если введённые данные верны.
      * Если данные неверные - пользователь не создаётся, а метод возвращает соответствующую ошибку.
      *
-
      * @param authRequest - AuthorizationRequest:
-     *                                  e_mail         - e-mail пользователя
-     *                                  name           - имя пользователя
-     *                                  password       - пароль для аккаунта
-     *                                  captcha        - код капчи
-     *                                  captcha_secret - секретный код капчи
+     *                    e_mail         - e-mail пользователя
+     *                    name           - имя пользователя
+     *                    password       - пароль для аккаунта
+     *                    captcha        - код капчи
+     *                    captcha_secret - секретный код капчи
      * @return - ResultResponse
      * @throws InvalidParameterException - в случае ошибок с текстом
      */
@@ -190,9 +206,7 @@ public class UserService {
      * @return - закодированный пароль
      */
     private String encodePassword(String password) {
-        byte[] pwBytes = DigestUtils.md5Digest(password.getBytes());
-
-        return Base64.encodeBase64String(pwBytes);
+        return new BCryptPasswordEncoder(12).encode(password);
     }
 
     /**
@@ -201,23 +215,26 @@ public class UserService {
      * Значение moderationCount содержит количество постов необходимых для проверки модераторами.
      * Считаются посты имеющие статус NEW и не проверерны модератором. Если пользователь не модератор возращать 0 в moderationCount.
      */
-    public ResultResponse authStatus() throws UserNotFoundException {
-        return new UserResultResponse(true, migrateToUserFullResponse(getUserFromSession()));
+    public ResultResponse authStatus(Principal principal) {
+        if (principal == null) {
+            return new ResultResponse(false);
+        }
+        return new UserResultResponse(true, migrateToUserFullResponse(getLoggedUser()));
     }
 
     /**
      * Метод проверяет введенные данные и производит авторизацию пользователя, если введенные данные верны.
      * Если пользователь авторизован, идентификатор его сессии должен запоминаться в Map<String, Integer> со значением,
      * равным ID пользователя, которому принадлежит данная сессия.
-     *
+     * <p>
      * Новый пользователь регистрируется не как модератор и не может менять настройки блога.
-     *
+     * <p>
      * В параметрах объекта user выводятся имя пользователя, ссылка на его аватар, e-mail,
      * параметры moderation (если равен true, то у пользователя есть права на модерацию и в выпадающем меню
      * справа будет отображаться пункт меню Модерация с цифрой, указанной в параметре moderationCount) и
      * settings (если равен true, то пользователю доступны настройки блога).
      * Оба параметра - moderation и settings - должны быть равны true, если пользователь является модератором.
-     *
+     * <p>
      * Значение moderationCount содержит количество постов необходимых для проверки модераторами.
      * Считаются посты имеющие статус NEW и не проверерны модератором. Если пользователь не модератор возращать 0 в moderationCount.
      *
@@ -225,23 +242,21 @@ public class UserService {
      * @return - ResultResponse
      */
     public ResultResponse logIn(LoginRequest loginRequest) throws UserNotFoundException, InvalidParameterException {
-        // ищем пользователя по имейл
-        User user = userRepository.findByEmailIgnoreCase(loginRequest.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("Пользователь с E-mail: " + loginRequest.getEmail() + " не зарегистрирован"));
+        Authentication auth = authenticationManager
+                .authenticate(
+                        new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        org.springframework.security.core.userdetails.User user =
+                (org.springframework.security.core.userdetails.User) auth.getPrincipal();
 
-        // сверяем пароль
-        if (!user.getPassword().equals(encodePassword(loginRequest.getPassword()))) {
-            throw new InvalidParameterException("Введен некорректный пароль");
-        }
+        User currentUser = getUserByEmail(loginRequest.getEmail());
 
-        // сохраняем отображение пользователь/сессия
-        saveUserIdFromSession(user.getId(), servletRequest.getSession().getId());
-
-        return new UserResultResponse(true, migrateToUserFullResponse(user));
+        return new UserResultResponse(true, migrateToUserFullResponse(currentUser));
     }
 
     /**
      * Метод преобразования User в UserFullResponse
+     *
      * @param user - пользователь из репозитория
      * @return - UserFullResponse для ответа на фронт
      */
@@ -261,7 +276,8 @@ public class UserService {
      * Всегда возвращает true, даже если идентификатор текущей сессии не найден в списке авторизованных.
      */
     public ResultResponse logout() {
-        userIdFromSession.clear();
+        SecurityContextHolder.clearContext();
+
         return new ResultResponse(true);
     }
 
@@ -274,8 +290,7 @@ public class UserService {
      * @param emailRequest - e-mail, на который отправится информация о восстановлении пароля
      */
     public ResultResponse restorePassword(EmailRequest emailRequest) throws UserNotFoundException, MessagingException {
-        User user = userRepository.findByEmailIgnoreCase(emailRequest.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("Пользователь с E-mail: " + emailRequest.getEmail() + " не зарегистрирован"));
+        User user = getUserByEmail(emailRequest.getEmail());
         String hash = UUID.randomUUID().toString();
         String link = rootDomain + changePasswordSubAddress + hash;
         String subject = "Код активации аккаунта ITBlogger";
@@ -292,7 +307,7 @@ public class UserService {
      * Метод проверяет корректность кода восстановления пароля (параметр code) и корректность кодов капчи:
      * введённый код (параметр captcha) должен совпадать со значением в поле code таблицы captcha_codes,
      * соответствующем пришедшему значению секретного кода (параметр captcha_secret и поле secret_code в таблице базы данных).
-     *
+     * <p>
      * code - код восстановления пароля
      * password - новый пароль
      * captcha - код капчи
@@ -311,68 +326,56 @@ public class UserService {
     }
 
     /**
-     * Метод получения пользователя по коду восстановления пароля.
-     * @param code код восстановления
-     * @return User (пользователя, у которого есть этот код)
-     * @throws InvalidParameterException в случае если пользователь не найден по коду
-     */
-    public User getUserByRecoveryCode(String code) throws InvalidParameterException {
-        return userRepository.getUserByCode(code).orElseThrow(() ->
-                new InvalidParameterException("code", "Ссылка для восстановления пароля устарела. <a href=\"" +
-                        restorePasswordSubAddress + "\">Запросить ссылку снова</a>"));
-    }
-
-    /**
      * Метод обрабатывает информацию, введённую пользователем в форму редактирования своего профиля.
      * Если пароль не введён, его не нужно изменять. Если введён, должна проверяться его корректность: достаточная длина.
      * Одинаковость паролей, введённых в двух полях, проверяется на frontend - на сервере проверка не требуется.
-     *
+     * <p>
      * Запрос без изменения пароля и фотографии: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru"
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru"
      * }
      * Запрос c изменением пароля и без изменения фотографии: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru",
-     *   "password":"123456"
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru",
+     * "password":"123456"
      * }
      * Запрос c изменением пароля и фотографии: Content-Type: multipart/form-data;
-     *
+     * <p>
      * {
-     *   "photo": <binary_file>,
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru",
-     *   "password":"123456",
-     *   "removePhoto":0
+     * "photo": <binary_file>,
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru",
+     * "password":"123456",
+     * "removePhoto":0
      * }
      * ⚠️ при загрузке файла изображения фотографии пользователя, необходимо выполнять обрезку и изменение размера фотографии до 36х36 пикселей.
-     *
+     * <p>
      * Запрос на удаление фотографии без изменения пароля: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru",
-     *   "removePhoto":1,
-     *   "photo": ""
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru",
+     * "removePhoto":1,
+     * "photo": ""
      * }
-     *
+     * <p>
      * photo - файл с фото или пустое значение (если его требуется удалить)
      * removePhoto - параметр, который указывает на то, что фотографию нужно удалить (если значение равно 1)
      * name - новое имя
      * email - новый e-mail
      * password - новый пароль
      *
-     * @param image - загружаемое изображение
+     * @param image          - загружаемое изображение
      * @param profileRequest - запрос с фронта с данными о профиле
      * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
      */
     public ResultResponse editMyProfile(MultipartFile image, ProfileRequest profileRequest)
             throws IOException, InvalidParameterException, UserNotFoundException {
-        User user = getUserFromSession();
+        User user = getLoggedUser();
         String avatarPath = imageService.resizeAndWriteImage(user.getId(), image);
 
         user.setPhoto(avatarPath);
@@ -385,30 +388,30 @@ public class UserService {
      * Метод обрабатывает информацию, введённую пользователем в форму редактирования своего профиля.
      * Если пароль не введён, его не нужно изменять. Если введён, должна проверяться его корректность: достаточная длина.
      * Одинаковость паролей, введённых в двух полях, проверяется на frontend - на сервере проверка не требуется.
-     *
+     * <p>
      * Запрос без изменения пароля и фотографии: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru"
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru"
      * }
      * Запрос c изменением пароля и без изменения фотографии: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru",
-     *   "password":"123456"
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru",
+     * "password":"123456"
      * }
-     *
+     * <p>
      * Запрос на удаление фотографии без изменения пароля: Content-Type: application/json
-     *
+     * <p>
      * {
-     *   "name":"Sendel",
-     *   "email":"sndl@mail.ru",
-     *   "removePhoto":1,
-     *   "photo": ""
+     * "name":"Sendel",
+     * "email":"sndl@mail.ru",
+     * "removePhoto":1,
+     * "photo": ""
      * }
-     *
+     * <p>
      * removePhoto - параметр, который указывает на то, что фотографию нужно удалить (если значение равно 1)
      * name - новое имя
      * email - новый e-mail
@@ -418,7 +421,7 @@ public class UserService {
      * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
      */
     public ResultResponse editMyProfile(ProfileRequest profileRequest) throws UserNotFoundException, InvalidParameterException {
-        User user = getUserFromSession();
+        User user = getLoggedUser();
         String name = profileRequest.getName();
         String email = profileRequest.getEmail();
         String password = profileRequest.getPassword();
@@ -431,7 +434,7 @@ public class UserService {
         textService.checkEmailForCorrect(email);
         if (userRepository.existsByIdAndEmailIgnoreCase(user.getId(), email) || !userRepository.existsByEmailIgnoreCase(email)) {
             user.setEmail(email);
-        }else {
+        } else {
             throw new InvalidParameterException("email", "E-mail занят другим пользователем");
         }
         // проверка пароля

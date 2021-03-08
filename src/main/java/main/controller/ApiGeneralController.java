@@ -20,6 +20,7 @@ import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -63,6 +64,7 @@ public class ApiGeneralController {
     }
 
     @PutMapping("/settings")
+    @PreAuthorize("hasAuthority('user:moderate')")
     public void saveSettings(@RequestBody SettingsResponse settingsResponse) {
         try {
             settingsService.saveSettings(settingsResponse);
@@ -78,6 +80,7 @@ public class ApiGeneralController {
     }
 
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> loadImage(MultipartFile image) {
         try {
             return new ResponseEntity<>(imageService.loadImage(image).getPath(),HttpStatus.OK);
@@ -91,6 +94,7 @@ public class ApiGeneralController {
     }
 
     @PostMapping("/comment")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<?> SetPostComment(@RequestBody CommentRequest commentRequest) {
         try {
             return new ResponseEntity<>(postService.addComment(commentRequest), HttpStatus.OK);
@@ -106,6 +110,7 @@ public class ApiGeneralController {
     }
 
     @PostMapping("/moderation")
+    @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<ResultResponse> moderatePost(@RequestBody ModerationRequest request) {
         try {
             postService.moderate(request.getPostId(), request.getDecision());
@@ -126,6 +131,7 @@ public class ApiGeneralController {
     @PostMapping(value = "/profile/my",
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> editMyProfile(@RequestParam("photo") MultipartFile image,
                                                         @ModelAttribute ProfileRequest profileRequest) {
 
@@ -150,7 +156,8 @@ public class ApiGeneralController {
         }
     }
 
-    @PostMapping("profile/my")
+    @PostMapping("/profile/my")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> editMyProfile(@RequestBody ProfileRequest profileRequest) {
         try {
             return new ResponseEntity<>(userService.editMyProfile(profileRequest), HttpStatus.OK);
@@ -168,6 +175,7 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/statistics/my")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<StatisticsResponse> getMyStatistics() {
         try {
             return new ResponseEntity<>(userService.getMyStatistics(), HttpStatus.OK);

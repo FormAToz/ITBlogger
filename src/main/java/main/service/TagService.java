@@ -31,7 +31,6 @@ public class TagService {
      * weight вычисляется по формуле: кол-во вхождений тэга / количество вхождений самого популярного тэга
      */
     public TagListResponse tags() {
-        // TODO Лист не переполнится? Сменить?
         // Список отсортирован по убыванию популярности тэга
         List<Object[]> tagCountList = tag2PostRepository.allTagsCount();
         List<TagResponse> tags = new ArrayList<>();

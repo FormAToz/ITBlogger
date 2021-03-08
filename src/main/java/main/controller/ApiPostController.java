@@ -16,10 +16,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.Map;
 
 @RestController
@@ -37,11 +40,14 @@ public class ApiPostController {
     }
 
     @GetMapping
-    public ResponseEntity<PostCountResponse> getAllPosts(int offset, int limit, String mode) {
+    public ResponseEntity<PostCountResponse> getAllPosts(@RequestParam(defaultValue = "0") int offset,
+                                                         @RequestParam(defaultValue = "10") int limit,
+                                                         @RequestParam(defaultValue = "recent") String mode) {
         return new ResponseEntity<>(postService.getAllSortedPosts(offset, limit, mode), HttpStatus.OK);
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> addPost(@RequestBody PostRequest postRequest) {
         try {
             return new ResponseEntity<>(postService.addPost(postRequest), HttpStatus.OK);
@@ -57,22 +63,25 @@ public class ApiPostController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<PostCountResponse> searchPost(int offset, int limit, String query) {
+    public ResponseEntity<PostCountResponse> searchPost(@RequestParam(defaultValue = "0") int offset,
+                                                        @RequestParam(defaultValue = "10") int limit,
+                                                        String query) {
         return new ResponseEntity<>(postService.searchPosts(offset, limit, query), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id) {
+    public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id, Principal principal) {
         try {
-            return new ResponseEntity<>(postService.getPostById(id), HttpStatus.OK);
+            return new ResponseEntity<>(postService.getPostById(id, principal), HttpStatus.OK);
         }
-        catch (UserNotFoundException | PostNotFoundException e) {
+        catch (PostNotFoundException e) {
             LOGGER.info(MARKER, e.getMessage());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody PostRequest postRequest) {
         try {
             return new ResponseEntity<>(postService.updatePost(id, postRequest), HttpStatus.OK);
@@ -88,22 +97,31 @@ public class ApiPostController {
     }
 
     @GetMapping("/byDate")
-    public ResponseEntity<PostCountResponse> getAllPostsByDate(int offset, int limit, String date) {
+    public ResponseEntity<PostCountResponse> getAllPostsByDate(@RequestParam(defaultValue = "0") int offset,
+                                                               @RequestParam(defaultValue = "10") int limit,
+                                                               String date) {
         return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
     @GetMapping("/byTag")
-    public ResponseEntity<PostCountResponse> getAllPostsByTag(int offset, int limit, String tag) {
+    public ResponseEntity<PostCountResponse> getAllPostsByTag(@RequestParam(defaultValue = "0") int offset,
+                                                              @RequestParam(defaultValue = "10") int limit,
+                                                              String tag) {
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
     @GetMapping("/moderation")
-    public ResponseEntity<PostCountResponse> getPostsForModeration(int offset, int limit, String status) {
+    public ResponseEntity<PostCountResponse> getPostsForModeration(@RequestParam(defaultValue = "0") int offset,
+                                                                   @RequestParam(defaultValue = "10") int limit,
+                                                                   String status) {
         return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
     @GetMapping("/my")
-    public ResponseEntity<PostCountResponse> getMyPosts(int offset, int limit, String status) {
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<PostCountResponse> getMyPosts(@RequestParam(defaultValue = "0") int offset,
+                                                        @RequestParam(defaultValue = "10") int limit,
+                                                        String status) {
         try {
             return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
 
@@ -114,6 +132,7 @@ public class ApiPostController {
     }
 
     @PostMapping("/like")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostLike(@RequestBody VoteRequest voteRequest) {
         try {
             return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
@@ -125,6 +144,7 @@ public class ApiPostController {
     }
 
     @PostMapping("/dislike")
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostDislike(@RequestBody VoteRequest voteRequest) {
         try {
             return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);

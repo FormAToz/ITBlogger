@@ -64,7 +64,7 @@ public class VoteService {
      */
     private boolean setVote(byte voteValue, int postId) throws PostNotFoundException, UserNotFoundException {
         Post post = postService.getActiveAndAcceptedPostById(postId);
-        User user = userService.getUserFromSession();
+        User user = userService.getLoggedUser();
         PostVote vote = voteRepository.findByUserAndPost(user, post).orElse(new PostVote());
 
         if (vote.getValue() == voteValue) {     // Если лайк/дизлайк уже был

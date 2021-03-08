@@ -49,7 +49,7 @@ file:
 text:
   min-title-length: 3
   min-text-length: 50
-  min-announce-text-length: 40
+  max-announce-text-length: 150
   min-comment-length: 3
   min-password-length: 6
 
