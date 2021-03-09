@@ -84,12 +84,7 @@ public class CaptchaService {
      * Метод удаления всех кодов с истекшим сроком действия
      */
     private void deleteAllExpiredCaptcha() {
-        // TODO убрать List. Сделать стирание записей на уровне бд
-        List<CaptchaCode> codeList = captchaCodeRepository.findAllExpiredCodes(timeService.getNowMinusCaptchaExpirationTime());
-
-        if (!codeList.isEmpty()) {
-            captchaCodeRepository.deleteAll(codeList);
-        }
+        captchaCodeRepository.deleteByTime(timeService.getNowMinusCaptchaExpirationTime());
     }
 
     /**

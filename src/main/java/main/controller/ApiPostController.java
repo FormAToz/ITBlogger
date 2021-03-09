@@ -31,7 +31,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getAllPosts(@RequestParam(defaultValue = "0") int offset,
                                                          @RequestParam(defaultValue = "10") int limit,
                                                          @RequestParam(defaultValue = "recent") SortMode mode) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getAllSortedPosts(offset, limit, mode), HttpStatus.OK);
     }
 
@@ -45,7 +44,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> searchPost(@RequestParam(defaultValue = "0") int offset,
                                                         @RequestParam(defaultValue = "10") int limit,
                                                         String query) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.searchPosts(offset, limit, query), HttpStatus.OK);
     }
 
@@ -64,7 +62,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getAllPostsByDate(@RequestParam(defaultValue = "0") int offset,
                                                                @RequestParam(defaultValue = "10") int limit,
                                                                String date) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
@@ -72,7 +69,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getAllPostsByTag(@RequestParam(defaultValue = "0") int offset,
                                                               @RequestParam(defaultValue = "10") int limit,
                                                               String tag) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
@@ -80,7 +76,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getPostsForModeration(@RequestParam(defaultValue = "0") int offset,
                                                                    @RequestParam(defaultValue = "10") int limit,
                                                                    @RequestParam(defaultValue = "new") Status status) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
@@ -89,7 +84,6 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getMyPosts(@RequestParam(defaultValue = "0") int offset,
                                                         @RequestParam(defaultValue = "10") int limit,
                                                         @RequestParam(defaultValue = "inactive") Status status) {
-        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
     }
 

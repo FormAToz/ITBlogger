@@ -3,26 +3,22 @@ package main.service;
 import main.api.response.InitResponse;
 import main.api.response.SettingsResponse;
 import main.exception.ContentNotFoundException;
-import main.model.GlobalSettings;
+import main.model.GlobalSetting;
+import main.model.enums.Setting;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Arrays;
 
 /**
  * Класс общих настроек блога
  */
 @Service
 public class SettingsService {
-    @Value("${settings.multiuser-mode}")
-    private String multiUserMode;
-    @Value("${settings.post-premoderation}")
-    private String postPreModeration;
-    @Value("${settings.statistics-is-public}")
-    private String statisticsIsPublic;
-    @Value("${settings.on-value}")
+   @Value("${settings.on-value}")
     private String onValue;
     @Value("${settings.off-value}")
     private String offValue;
@@ -51,25 +47,18 @@ public class SettingsService {
     @PostConstruct
     private void initSettings() {
         if (settingsRepository.count() == 0) {
-            generateAndSave(multiUserMode, "Многопользовательский режим", onValue);
-            generateAndSave(postPreModeration, "Премодерация постов", onValue);
-            generateAndSave(statisticsIsPublic, "Показывать всем статистику блога", onValue);
+            Arrays.stream(Setting.values())
+                    .forEach(el -> settingsRepository.save(new GlobalSetting(el, el.getName(), onValue)));
         }
     }
 
     /**
      * Метод проверяет включена ли премодерация постов
+     *
      * @return true, если включена или false, если отключена
      */
     public boolean preModerationIsOn() {
-        return settingsRepository.existsByCodeAndValueIgnoreCase(postPreModeration, onValue);
-    }
-
-    /**
-     * Метод генерации и сохранения настроек блога
-     */
-    private void generateAndSave(String code, String name, String value) {
-        settingsRepository.save(new GlobalSettings(code, name, value));
+        return settingsRepository.existsByCodeAndValueIgnoreCase(Setting.POST_PREMODERATION, onValue);
     }
 
     /**
@@ -78,9 +67,9 @@ public class SettingsService {
      * @return SettingsResponse
      */
     public SettingsResponse getSettings() {
-        GlobalSettings multiUserMode = findByCode(this.multiUserMode);
-        GlobalSettings postPreModeration = findByCode(this.postPreModeration);
-        GlobalSettings statisticsIsPublic = findByCode(this.statisticsIsPublic);
+        GlobalSetting multiUserMode = findByCode(Setting.MULTIUSER_MODE);
+        GlobalSetting postPreModeration = findByCode(Setting.POST_PREMODERATION);
+        GlobalSetting statisticsIsPublic = findByCode(Setting.STATISTICS_IS_PUBLIC);
 
         return new SettingsResponse(stringToBoolean(multiUserMode.getValue()),
                 stringToBoolean(postPreModeration.getValue()),
@@ -103,7 +92,7 @@ public class SettingsService {
      * @param code - название кода
      * @return GlobalSettings
      */
-    public GlobalSettings findByCode(String code) {
+    public GlobalSetting findByCode(Setting code) {
         return settingsRepository.findByCode(code)
                 .orElseThrow(() -> new ContentNotFoundException("Настройка с кодом " + code + " не найдена"));
     }
@@ -111,9 +100,9 @@ public class SettingsService {
     /**
      * Метод записывает глобальные настройки блога в таблицу global_settings,
      * если запрашивающий пользователь авторизован и является модератором.
-     *
+     * <p>
      * Значения глобальных настроек
-     *      *
+     * *
      * code                  name                               value
      * MULTIUSER_MODE        Многопользовательский режим        YES/NO
      * POST_PREMODERATION    Премодерация постов                YES/NO
@@ -122,26 +111,27 @@ public class SettingsService {
      * @param response - запрос с фронта
      */
     public void saveSettings(SettingsResponse response) {
-        updateSetting(multiUserMode, response.isMultiUserMode());
-        updateSetting(postPreModeration, response.isPostPreModeration());
-        updateSetting(statisticsIsPublic, response.isStatisticsIsPublic());
+        updateSetting(Setting.MULTIUSER_MODE, response.isMultiUserMode());
+        updateSetting(Setting.POST_PREMODERATION, response.isPostPreModeration());
+        updateSetting(Setting.STATISTICS_IS_PUBLIC, response.isStatisticsIsPublic());
     }
 
     /**
      * Метод обновления значения настройки
      *
-     * @param code - код настройки
+     * @param code  - код настройки
      * @param value - значение настройки
      * @throws ContentNotFoundException в случае, если настройка не найдена
      */
-    private void updateSetting(String code, boolean value) {
-        GlobalSettings setting = findByCode(code);
+    private void updateSetting(Setting code, boolean value) {
+        GlobalSetting setting = findByCode(code);
         setting.setValue(booleanToString(value));
         settingsRepository.save(setting);
     }
 
     /**
      * Метод преобразования boolean в String
+     *
      * @param b - true или false
      * @return - YES или NO
      */
@@ -155,6 +145,6 @@ public class SettingsService {
      * @return true - разрешен, false - запрещен
      */
     public boolean globalStatisticsIsAvailable() {
-        return settingsRepository.existsByCodeAndValueIgnoreCase(statisticsIsPublic, "YES");
+        return settingsRepository.existsByCodeAndValueIgnoreCase(Setting.STATISTICS_IS_PUBLIC, onValue);
     }
 }

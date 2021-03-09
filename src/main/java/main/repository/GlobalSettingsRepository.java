@@ -1,15 +1,16 @@
 package main.repository;
 
-import main.model.GlobalSettings;
+import main.model.GlobalSetting;
+import main.model.enums.Setting;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface GlobalSettingsRepository extends CrudRepository<GlobalSettings, Integer> {
+public interface GlobalSettingsRepository extends CrudRepository<GlobalSetting, Integer> {
 
-    Optional<GlobalSettings> findByCode(String code);
+    Optional<GlobalSetting> findByCode(Setting code);
 
-    boolean existsByCodeAndValueIgnoreCase(String code, String value);
+    boolean existsByCodeAndValueIgnoreCase(Setting code, String value);
 }

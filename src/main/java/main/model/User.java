@@ -57,7 +57,6 @@ public class User {
     private List<PostComment> comments;
 
     public Role getRole() {
-        //TODO убрать хардкод
         return isModerator == 1 ? Role.MODERATOR : Role.USER;
     }
 

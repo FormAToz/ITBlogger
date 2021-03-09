@@ -62,7 +62,6 @@ public class TagService {
      * Если тэг есть в базе, берем его оттуда, иначе перекладываем из непроверенного списка.
      */
     public List<Tag> checkDuplicatesInRepo(List<Tag> uncheckedList) {
-        // TODO вероятно, изменить логику
         List<Tag> checkedList = new ArrayList<>();
 
         for (Tag tag : uncheckedList) {

@@ -68,8 +68,5 @@ change-password-subaddress: /login/change-password/  #part of sent to email link
 restore-password-subaddress: /login/restore-password  #part of link to password recovery page
 
 settings:
-  multiuser-mode: MULTIUSER_MODE
-  post-premoderation: POST_PREMODERATION
-  statistics-is-public: STATISTICS_IS_PUBLIC
   on-value: 'YES'
   off-value: 'NO'

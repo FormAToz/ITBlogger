@@ -1,11 +1,13 @@
 package main.model;
 
+import main.model.enums.Setting;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "global_settings")
-public class GlobalSettings {
+public class GlobalSetting {
     /**
      * Класс глобальных настроек движка
      *
@@ -28,12 +30,17 @@ public class GlobalSettings {
     private int id;
 
     @NotNull
-    private String code, name, value;
+    @Column(columnDefinition = "VARCHAR(32)")
+    @Enumerated(EnumType.STRING)
+    private Setting code;
 
-    public GlobalSettings() {
+    @NotNull
+    private String name, value;
+
+    public GlobalSetting() {
     }
 
-    public GlobalSettings(@NotNull String code, @NotNull String name, @NotNull String value) {
+    public GlobalSetting(@NotNull Setting code, @NotNull String name, @NotNull String value) {
         this.code = code;
         this.name = name;
         this.value = value;
@@ -47,11 +54,11 @@ public class GlobalSettings {
         this.id = id;
     }
 
-    public String getCode() {
+    public Setting getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Setting code) {
         this.code = code;
     }
 
