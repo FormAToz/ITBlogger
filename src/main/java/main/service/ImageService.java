@@ -58,7 +58,7 @@ public class ImageService {
      * @throws IOException в случае ошибки чтения/записи
      * @throws InvalidParameterException в случае ошибок обработки изображения (превышен размер, неверный формат и т.д.)
      */
-    public ImageResultResponse loadImage(MultipartFile image) throws IOException, InvalidParameterException {
+    public ImageResultResponse loadImage(MultipartFile image) throws IOException {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
@@ -79,7 +79,7 @@ public class ImageService {
      * @param sizeInMB максимально допустимый размер файла
      * @throws InvalidParameterException в случае, если размер файла больше допустимого размера
      */
-    public void checkFileSize(MultipartFile file, int sizeInMB) throws InvalidParameterException {
+    public void checkFileSize(MultipartFile file, int sizeInMB) {
         if (file.isEmpty()) {
             throw new InvalidParameterException("image", "Ошибка при загрузке изображения");
         }
@@ -96,7 +96,7 @@ public class ImageService {
      * @param file загружаемый файл
      * @throws InvalidParameterException в случаях, когда не удается прочитать расширение файла
      */
-    private void checkFileExtension(MultipartFile file) throws InvalidParameterException {
+    private void checkFileExtension(MultipartFile file) {
         String fileName = file.getOriginalFilename();
 
         if (fileName == null || fileName.isEmpty()) {
@@ -144,7 +144,7 @@ public class ImageService {
      * @return путь до измененного изображения
      * @throws IOException в случае ошибок чтения/записи изображения
      */
-    public String resizeAndWriteImage(int userId, MultipartFile image) throws IOException, InvalidParameterException {
+    public String resizeAndWriteImage(int userId, MultipartFile image) throws IOException {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
@@ -217,8 +217,7 @@ public class ImageService {
     /**
      * Метод записывает измененный файл в указанное место
      */
-    private void writePNG(BufferedImage bufferedImage, OutputStream outputStream,
-                                float quality) throws IOException {
+    private void writePNG(BufferedImage bufferedImage, OutputStream outputStream, float quality) throws IOException {
         Iterator<ImageWriter> iterator =
                 ImageIO.getImageWritersByFormatName(FileExtension.PNG.name().toLowerCase());
         ImageWriter imageWriter = iterator.next();

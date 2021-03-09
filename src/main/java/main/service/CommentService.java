@@ -2,7 +2,7 @@ package main.service;
 
 import main.api.response.CommentResponse;
 import main.api.response.user.UserResponse;
-import main.exception.CommentNotFoundException;
+import main.exception.ContentNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
@@ -26,11 +26,11 @@ public class CommentService {
      *
      * @param id - id комментария
      * @return PostComment
-     * @throws CommentNotFoundException в случае, если комментарий не найден
+     * @throws ContentNotFoundException в случае, если комментарий не найден
      */
-    public PostComment getCommentById(int id) throws CommentNotFoundException {
+    public PostComment getCommentById(int id) {
         return commentRepository.findById(id)
-                .orElseThrow(() -> new CommentNotFoundException("Комментарий с id = " + id + " не найден"));
+                .orElseThrow(() -> new ContentNotFoundException("Комментарий с id = " + id + " не найден"));
     }
 
     /**

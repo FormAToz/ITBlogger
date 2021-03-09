@@ -10,7 +10,6 @@ import main.api.response.result.ResultResponse;
 import main.api.response.result.UserResultResponse;
 import main.api.response.user.UserFullResponse;
 import main.exception.InvalidParameterException;
-import main.exception.UserNotFoundException;
 import main.model.Post;
 import main.model.User;
 import main.repository.UserRepository;
@@ -30,12 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -78,11 +74,11 @@ public class UserService {
      *
      * @param id - Id пользователя
      * @return - User
-     * @throws UserNotFoundException - в случае, если пользователь не найден
+     * @throws UsernameNotFoundException - в случае, если пользователь не найден
      */
-    public User getUserById(int id) throws UserNotFoundException {
+    public User getUserById(int id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Пользователь с id = " + id + " не найден"));
+                .orElseThrow(() -> new UsernameNotFoundException("Пользователь с id = " + id + " не найден"));
     }
 
     /**
@@ -90,7 +86,7 @@ public class UserService {
      *
      * @param email адрес электронной почты
      * @return объект User
-     * @throws UserNotFoundException в случае, если пользователя с данным e-mail не существует
+     * @throws UsernameNotFoundException в случае, если пользователя с данным e-mail не существует
      */
     public User getUserByEmail(String email) {
         return userRepository.findByEmailIgnoreCase(email)
@@ -104,7 +100,7 @@ public class UserService {
      * @return User (пользователя, у которого есть этот код)
      * @throws InvalidParameterException в случае если пользователь не найден по коду
      */
-    public User getUserByRecoveryCode(String code) throws InvalidParameterException {
+    public User getUserByRecoveryCode(String code) {
         return userRepository.getUserByCode(code).orElseThrow(() ->
                 new InvalidParameterException("code", "Ссылка для восстановления пароля устарела. <a href=\"" +
                         restorePasswordSubAddress + "\">Запросить ссылку снова</a>"));
@@ -150,7 +146,7 @@ public class UserService {
      *
      * @return - StatisticsResponse
      */
-    public StatisticsResponse getMyStatistics() throws UserNotFoundException {
+    public StatisticsResponse getMyStatistics() {
         User user = getLoggedUser();
         LocalDateTime timeOfFirstPost = postService.getTimeOfFirstPostByUser(user);
 
@@ -175,7 +171,7 @@ public class UserService {
      * @return - ResultResponse
      * @throws InvalidParameterException - в случае ошибок с текстом
      */
-    public ResultResponse register(AuthorizationRequest authRequest) throws InvalidParameterException {
+    public ResultResponse register(AuthorizationRequest authRequest) {
         textService.checkEmailForCorrect(authRequest.getEmail());  // Проверка e-mail
 
         if (userRepository.existsByEmailIgnoreCase(authRequest.getEmail())) {
@@ -241,7 +237,7 @@ public class UserService {
      * @param loginRequest - e-mail и пароль пользователя
      * @return - ResultResponse
      */
-    public ResultResponse logIn(LoginRequest loginRequest) throws UserNotFoundException, InvalidParameterException {
+    public ResultResponse logIn(LoginRequest loginRequest) {
         Authentication auth = authenticationManager
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
@@ -289,7 +285,7 @@ public class UserService {
      *
      * @param emailRequest - e-mail, на который отправится информация о восстановлении пароля
      */
-    public ResultResponse restorePassword(EmailRequest emailRequest) throws UserNotFoundException, MessagingException {
+    public ResultResponse restorePassword(EmailRequest emailRequest) throws MessagingException {
         User user = getUserByEmail(emailRequest.getEmail());
         String hash = UUID.randomUUID().toString();
         String link = rootDomain + changePasswordSubAddress + hash;
@@ -313,7 +309,7 @@ public class UserService {
      * captcha - код капчи
      * captcha_secret - секретный код капчи
      */
-    public ResultResponse changePassword(AuthorizationRequest authorizationRequest) throws InvalidParameterException {
+    public ResultResponse changePassword(AuthorizationRequest authorizationRequest) {
         User user = getUserByRecoveryCode(authorizationRequest.getCode());
 
         captchaService.checkCaptcha(authorizationRequest.getCaptcha(), authorizationRequest.getCaptchaSecret());
@@ -373,8 +369,7 @@ public class UserService {
      * @param profileRequest - запрос с фронта с данными о профиле
      * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
      */
-    public ResultResponse editMyProfile(MultipartFile image, ProfileRequest profileRequest)
-            throws IOException, InvalidParameterException, UserNotFoundException {
+    public ResultResponse editMyProfile(MultipartFile image, ProfileRequest profileRequest) throws IOException {
         User user = getLoggedUser();
         String avatarPath = imageService.resizeAndWriteImage(user.getId(), image);
 
@@ -420,7 +415,7 @@ public class UserService {
      * @param profileRequest - запрос с фронта с данными о профиле
      * @return ResultResponse true, если все успешно или false, в случае ошибки с ее описанием
      */
-    public ResultResponse editMyProfile(ProfileRequest profileRequest) throws UserNotFoundException, InvalidParameterException {
+    public ResultResponse editMyProfile(ProfileRequest profileRequest) {
         User user = getLoggedUser();
         String name = profileRequest.getName();
         String email = profileRequest.getEmail();

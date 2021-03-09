@@ -1,14 +1,14 @@
 package main.service;
 
 import main.api.response.result.ResultResponse;
-import main.exception.PostNotFoundException;
-import main.exception.UserNotFoundException;
+import main.exception.ContentNotFoundException;
 import main.model.Post;
 import main.model.PostVote;
 import main.model.User;
 import main.repository.PostVoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class VoteService {
      * Если до этого этот же пользователь поставил на этот же пост дизлайк, этот дизлайк должен быть заменен на лайк в базе данных.
      * @param postId - id поста которому ставим лайк
      */
-    public ResultResponse likePost(int postId) throws PostNotFoundException, UserNotFoundException {
+    public ResultResponse likePost(int postId) {
         return new ResultResponse(setVote(likeValue, postId));
     }
 
@@ -48,7 +48,7 @@ public class VoteService {
      * Если до этого этот же пользователь поставил на этот же пост лайк, этот лайк должен заменен на дизлайк в базе данных.
      * @param postId - id поста
      */
-    public ResultResponse dislikePost(int postId) throws PostNotFoundException, UserNotFoundException {
+    public ResultResponse dislikePost(int postId) {
         return new ResultResponse(setVote(dislikeValue, postId));
     }
 
@@ -59,10 +59,10 @@ public class VoteService {
      * @param voteValue - значение лайка/дизлайка
      * @param postId - id поста, которому ставится лайк/дизлайк
      * @return  В случае повторного лайка/дизлайка - возвращаем false, иначе true
-     * @throws PostNotFoundException в случае, если пост не найден
-     * @throws UserNotFoundException в случае, если пользователь не найден
+     * @throws ContentNotFoundException в случае, если пост не найден
+     * @throws UsernameNotFoundException в случае, если пользователь не найден
      */
-    private boolean setVote(byte voteValue, int postId) throws PostNotFoundException, UserNotFoundException {
+    private boolean setVote(byte voteValue, int postId) {
         Post post = postService.getActiveAndAcceptedPostById(postId);
         User user = userService.getLoggedUser();
         PostVote vote = voteRepository.findByUserAndPost(user, post).orElse(new PostVote());

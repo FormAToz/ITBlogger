@@ -2,7 +2,7 @@ package main.service;
 
 import main.api.response.InitResponse;
 import main.api.response.SettingsResponse;
-import main.exception.SettingNotFoundException;
+import main.exception.ContentNotFoundException;
 import main.model.GlobalSettings;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +77,7 @@ public class SettingsService {
      *
      * @return SettingsResponse
      */
-    public SettingsResponse getSettings() throws SettingNotFoundException {
+    public SettingsResponse getSettings() {
         GlobalSettings multiUserMode = findByCode(this.multiUserMode);
         GlobalSettings postPreModeration = findByCode(this.postPreModeration);
         GlobalSettings statisticsIsPublic = findByCode(this.statisticsIsPublic);
@@ -103,9 +103,9 @@ public class SettingsService {
      * @param code - название кода
      * @return GlobalSettings
      */
-    public GlobalSettings findByCode(String code) throws SettingNotFoundException {
+    public GlobalSettings findByCode(String code) {
         return settingsRepository.findByCode(code)
-                .orElseThrow(() -> new SettingNotFoundException("Настройка с кодом " + code + " не найдена"));
+                .orElseThrow(() -> new ContentNotFoundException("Настройка с кодом " + code + " не найдена"));
     }
 
     /**
@@ -121,7 +121,7 @@ public class SettingsService {
      *
      * @param response - запрос с фронта
      */
-    public void saveSettings(SettingsResponse response) throws SettingNotFoundException {
+    public void saveSettings(SettingsResponse response) {
         updateSetting(multiUserMode, response.isMultiUserMode());
         updateSetting(postPreModeration, response.isPostPreModeration());
         updateSetting(statisticsIsPublic, response.isStatisticsIsPublic());
@@ -132,9 +132,9 @@ public class SettingsService {
      *
      * @param code - код настройки
      * @param value - значение настройки
-     * @throws SettingNotFoundException в случае, если настройка не найдена
+     * @throws ContentNotFoundException в случае, если настройка не найдена
      */
-    private void updateSetting(String code, boolean value) throws SettingNotFoundException {
+    private void updateSetting(String code, boolean value) {
         GlobalSettings setting = findByCode(code);
         setting.setValue(booleanToString(value));
         settingsRepository.save(setting);

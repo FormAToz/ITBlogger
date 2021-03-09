@@ -21,7 +21,7 @@ public class TextService {
     @Value("${text.min-password-length}")
     private int minPasswordLength;
 
-    public void checkTitleAndTextLength(String title, String text) throws InvalidParameterException {
+    public void checkTitleAndTextLength(String title, String text) {
         if (title.length() < minTitleLength) {
             throw new InvalidParameterException("title", "Заголовок публикации менее " + minTitleLength + " символов");
         }
@@ -41,7 +41,7 @@ public class TextService {
         return postAnnounce.replaceAll("(<.*?>)|(&.*?;)|([ ]{2,})", " ");
     }
 
-    public void checkTextCommentLength(String text) throws InvalidParameterException {
+    public void checkTextCommentLength(String text) {
         if (text.length() < minCommentLength) {
             throw new InvalidParameterException("text", "Текст комментария не задан или менее " + minCommentLength + " символов");
         }
@@ -52,7 +52,7 @@ public class TextService {
      * @param password пароль
      * @throws InvalidParameterException в случае, если длина недостаточна
      */
-    public void checkPasswordLength(String password) throws InvalidParameterException {
+    public void checkPasswordLength(String password) {
         if (password.length() < minPasswordLength) {
             throw new InvalidParameterException("password", "Пароль короче " + minPasswordLength + " символов");
         }
@@ -63,7 +63,7 @@ public class TextService {
      *
      * @param name - имя пользователя (без числовых символов)
      */
-    public void checkNameForCorrect(String name) throws InvalidParameterException {
+    public void checkNameForCorrect(String name) {
         if (name == null || name.isEmpty()) {
             throw new InvalidParameterException("name", "Имя пользователя не введено");
         }
@@ -78,7 +78,7 @@ public class TextService {
      *
      * @param email - e-mail пользователя
      */
-    public void checkEmailForCorrect(String email) throws InvalidParameterException {
+    public void checkEmailForCorrect(String email) {
         if (email == null || email.isEmpty()) {
             throw new InvalidParameterException("email", "E-mail не введен");
         }

@@ -97,7 +97,7 @@ public class CaptchaService {
      *
      * @param captcha - код капчи, что пользователь ввел на фронте
      */
-    public void checkCaptcha(String captcha, String captchaSecret) throws InvalidParameterException {
+    public void checkCaptcha(String captcha, String captchaSecret) {
         CaptchaCode captchaCode = captchaCodeRepository.findBySecretCode(captchaSecret)
                 .orElseThrow(() -> new InvalidParameterException("captcha", "Срок действия секретного кода истек"));
 

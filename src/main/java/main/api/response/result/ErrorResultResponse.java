@@ -1,9 +1,14 @@
 package main.api.response.result;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Формат ответа в случае ошибок:
+ * Класс ответа ошибок по соответствию тип - сообщение
+ *
+ * Пример формата ответа в случае ошибок:
  *
  * {
  *   "result": false,
@@ -13,12 +18,22 @@ import java.util.Map;
  *   }
  * }
  */
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ErrorResultResponse extends ResultResponse{
-    private final Map<String, String> errors;
+    private Map<String, String> errors = new HashMap<>();
 
-    public ErrorResultResponse(boolean result, Map<String, String> errors) {
+    public ErrorResultResponse(boolean result) {
         super(result);
-        this.errors = errors;
+    }
+
+    public ErrorResultResponse(boolean result, String message) {
+        super(result);
+        errors.put("message", message);
+    }
+
+    public ErrorResultResponse(boolean result, String type, String message) {
+        super(result);
+        errors.put(type, message);
     }
 
     public Map<String, String> getErrors() {

@@ -1,36 +1,22 @@
 package main.controller;
 
-import main.Main;
 import main.api.request.PostRequest;
 import main.api.request.VoteRequest;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
-import main.api.response.result.ErrorResultResponse;
 import main.api.response.result.ResultResponse;
-import main.exception.InvalidParameterException;
-import main.exception.PostNotFoundException;
-import main.exception.UserNotFoundException;
 import main.service.PostService;
 import main.service.VoteService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("api/post")
 public class ApiPostController {
-    private static final Logger LOGGER = LogManager.getLogger(Main.class);
-    private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
-
     private final PostService postService;
     private final VoteService voteService;
 
@@ -49,17 +35,7 @@ public class ApiPostController {
     @PostMapping
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> addPost(@RequestBody PostRequest postRequest) {
-        try {
-            return new ResponseEntity<>(postService.addPost(postRequest), HttpStatus.OK);
-
-        } catch (UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(HttpStatus.OK);
-
-        } catch (InvalidParameterException e) {
-            return new ResponseEntity<>(
-                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.BAD_REQUEST);
-        }
+        return new ResponseEntity<>(postService.addPost(postRequest), HttpStatus.OK);
     }
 
     @GetMapping("/search")
@@ -71,29 +47,13 @@ public class ApiPostController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PostFullResponse> getPostById(@PathVariable int id, Principal principal) {
-        try {
-            return new ResponseEntity<>(postService.getPostById(id, principal), HttpStatus.OK);
-        }
-        catch (PostNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return new ResponseEntity<>(postService.getPostById(id, principal), HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> updatePost(@PathVariable int id, @RequestBody PostRequest postRequest) {
-        try {
-            return new ResponseEntity<>(postService.updatePost(id, postRequest), HttpStatus.OK);
-
-        } catch (PostNotFoundException | UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.NOT_FOUND);
-
-        } catch (InvalidParameterException e) {
-            return new ResponseEntity<>(
-                    new ErrorResultResponse(false, Map.of(e.getType(), e.getMessage())), HttpStatus.OK);
-        }
+        return new ResponseEntity<>(postService.updatePost(id, postRequest), HttpStatus.OK);
     }
 
     @GetMapping("/byDate")
@@ -122,36 +82,20 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getMyPosts(@RequestParam(defaultValue = "0") int offset,
                                                         @RequestParam(defaultValue = "10") int limit,
                                                         String status) {
-        try {
-            return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
-
-        } catch (UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
     }
 
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostLike(@RequestBody VoteRequest voteRequest) {
-        try {
-            return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
-
-        } catch (PostNotFoundException | UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
+        // TODO проверить статус код ответа при лайке (после обработки 403 кода)
+        return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
     }
 
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostDislike(@RequestBody VoteRequest voteRequest) {
-        try {
-            return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);
-
-        } catch (PostNotFoundException | UserNotFoundException e) {
-            LOGGER.info(MARKER, e.getMessage());
-            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
-        }
+        // TODO проверить статус код ответа при дизлайке (после обработки 403 кода)
+        return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);
     }
 }

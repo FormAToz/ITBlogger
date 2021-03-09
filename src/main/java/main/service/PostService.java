@@ -61,11 +61,11 @@ public class PostService {
      *
      * @param id - id поста
      * @return Post
-     * @throws PostNotFoundException в случае, если пост не найден
+     * @throws ContentNotFoundException в случае, если пост не найден
      */
-    public Post getById(int id) throws PostNotFoundException {
+    public Post getById(int id) {
         return postRepository.findById(id)
-                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
+                .orElseThrow(() -> new ContentNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
     }
 
     /**
@@ -73,11 +73,11 @@ public class PostService {
      *
      * @param id - id поста
      * @return  Post
-     * @throws PostNotFoundException в случае, если пост не найден
+     * @throws ContentNotFoundException в случае, если пост не найден
      */
-    public Post getActiveAndAcceptedPostById(int id) throws PostNotFoundException {
+    public Post getActiveAndAcceptedPostById(int id) {
         return postRepository.findAvailablePostById(id)
-                .orElseThrow(() -> new PostNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
+                .orElseThrow(() -> new ContentNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
     }
 
     /**
@@ -123,7 +123,7 @@ public class PostService {
      *
      * Пост должен сохраняться со статусом модерации NEW.
      */
-    public ResultResponse addPost(PostRequest request) throws UserNotFoundException, InvalidParameterException {
+    public ResultResponse addPost(PostRequest request) {
         User user = userService.getLoggedUser();
         Post post = new Post();
 
@@ -171,7 +171,7 @@ public class PostService {
      *
      * @param id - id поста
      */
-    public PostFullResponse getPostById(int id, Principal principal) throws PostNotFoundException {
+    public PostFullResponse getPostById(int id, Principal principal) {
         Post post = getById(id);
         return (PostFullResponse) migrateToPostResponse(new PostFullResponse(), post)
                 .active(isActive(post))
@@ -200,8 +200,7 @@ public class PostService {
      *          text - текст поста в формате HTML
      *          tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
      */
-    public ResultResponse updatePost(int id, PostRequest postRequest)
-            throws PostNotFoundException, InvalidParameterException, UserNotFoundException {
+    public ResultResponse updatePost(int id, PostRequest postRequest) {
         Post post = getById(id);
         User user = userService.getLoggedUser();
 
@@ -299,7 +298,7 @@ public class PostService {
      * @param postId   - идентификатор поста
      * @param decision - решение по посту: accept или decline.
      */
-    public boolean moderate(int postId, String decision) throws UserNotFoundException, PostNotFoundException {
+    public boolean moderate(int postId, String decision) {
         User user = userService.getLoggedUser();
 
         if (!userService.isModerator(user)) {
@@ -345,7 +344,7 @@ public class PostService {
      *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
      *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
-    public PostCountResponse getMyPosts(int offset, int limit, String status) throws UserNotFoundException {
+    public PostCountResponse getMyPosts(int offset, int limit, String status) {
         User user = userService.getLoggedUser();
         Pageable pageable = PageRequest.of(offset / limit, limit);
         List<Post> list = new ArrayList<>();
@@ -460,11 +459,10 @@ public class PostService {
      *
      * @return StatisticsResponse
      */
-    public StatisticsResponse getGlobalStatistics()
-            throws ApplicationException, UserNotFoundException {
+    public StatisticsResponse getGlobalStatistics() {
         // если настройки показа отключены и пользователь не модератор
         if (!settingsService.globalStatisticsIsAvailable() && !userService.isModerator(userService.getLoggedUser())) {
-            throw new ApplicationException("Статистика просмотра всего блога недоступна");
+            throw new ContentNotFoundException("Статистика просмотра всего блога недоступна");
         }
 
         return new StatisticsResponse()
@@ -500,8 +498,7 @@ public class PostService {
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)
      */
-    public IdResponse addComment(CommentRequest commentRequest)
-            throws UserNotFoundException, PostNotFoundException, InvalidParameterException, CommentNotFoundException {
+    public IdResponse addComment(CommentRequest commentRequest) {
         int parentCommentId = commentRequest.getParentId();
         String text = commentRequest.getText();
         User user = userService.getLoggedUser();
