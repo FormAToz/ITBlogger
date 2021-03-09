@@ -112,7 +112,6 @@ public class UserService {
      * @return - User, авторизированный пользователь
      */
     public User getLoggedUser() {
-        //TODO если пользователь не залогинился, то получаем 403 ошибку
         String loggedUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return getUserByEmail(loggedUserEmail);

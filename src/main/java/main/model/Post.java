@@ -1,5 +1,7 @@
 package main.model;
 
+import main.model.enums.Status;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -33,7 +35,7 @@ public class Post {
     @NotNull
     @Column(columnDefinition = "VARCHAR(32) default 'NEW'")
     @Enumerated(EnumType.STRING)
-    private ModerationStatus moderationStatus;
+    private Status moderationStatus;
 
     @Column(name = "moderator_id")
     private Integer moderatorId;
@@ -82,11 +84,11 @@ public class Post {
         this.active = active;
     }
 
-    public ModerationStatus getModerationStatus() {
+    public Status getModerationStatus() {
         return moderationStatus;
     }
 
-    public void setModerationStatus(ModerationStatus moderationStatus) {
+    public void setModerationStatus(Status moderationStatus) {
         this.moderationStatus = moderationStatus;
     }
 
@@ -152,14 +154,5 @@ public class Post {
 
     public void setComments(List<PostComment> comments) {
         this.comments = comments;
-    }
-
-    public enum ModerationStatus {
-        /**
-         * Класс перечисления статуса модерации постов
-         */
-        NEW,
-        ACCEPTED,
-        DECLINED
     }
 }

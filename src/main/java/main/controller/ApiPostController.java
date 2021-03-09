@@ -5,6 +5,8 @@ import main.api.request.VoteRequest;
 import main.api.response.post.PostCountResponse;
 import main.api.response.post.PostFullResponse;
 import main.api.response.result.ResultResponse;
+import main.model.enums.SortMode;
+import main.model.enums.Status;
 import main.service.PostService;
 import main.service.VoteService;
 import org.springframework.http.HttpStatus;
@@ -28,7 +30,8 @@ public class ApiPostController {
     @GetMapping
     public ResponseEntity<PostCountResponse> getAllPosts(@RequestParam(defaultValue = "0") int offset,
                                                          @RequestParam(defaultValue = "10") int limit,
-                                                         @RequestParam(defaultValue = "recent") String mode) {
+                                                         @RequestParam(defaultValue = "recent") SortMode mode) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getAllSortedPosts(offset, limit, mode), HttpStatus.OK);
     }
 
@@ -42,6 +45,7 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> searchPost(@RequestParam(defaultValue = "0") int offset,
                                                         @RequestParam(defaultValue = "10") int limit,
                                                         String query) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.searchPosts(offset, limit, query), HttpStatus.OK);
     }
 
@@ -60,6 +64,7 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getAllPostsByDate(@RequestParam(defaultValue = "0") int offset,
                                                                @RequestParam(defaultValue = "10") int limit,
                                                                String date) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
@@ -67,13 +72,15 @@ public class ApiPostController {
     public ResponseEntity<PostCountResponse> getAllPostsByTag(@RequestParam(defaultValue = "0") int offset,
                                                               @RequestParam(defaultValue = "10") int limit,
                                                               String tag) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
     @GetMapping("/moderation")
     public ResponseEntity<PostCountResponse> getPostsForModeration(@RequestParam(defaultValue = "0") int offset,
                                                                    @RequestParam(defaultValue = "10") int limit,
-                                                                   String status) {
+                                                                   @RequestParam(defaultValue = "new") Status status) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getPostsForModeration(offset, limit, status), HttpStatus.OK);
     }
 
@@ -81,21 +88,20 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostCountResponse> getMyPosts(@RequestParam(defaultValue = "0") int offset,
                                                         @RequestParam(defaultValue = "10") int limit,
-                                                        String status) {
+                                                        @RequestParam(defaultValue = "inactive") Status status) {
+        //TODO проверить значения по умолчанию через postman
         return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
     }
 
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostLike(@RequestBody VoteRequest voteRequest) {
-        // TODO проверить статус код ответа при лайке (после обработки 403 кода)
         return new ResponseEntity<>(voteService.likePost(voteRequest.getPostId()), HttpStatus.OK);
     }
 
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> setPostDislike(@RequestBody VoteRequest voteRequest) {
-        // TODO проверить статус код ответа при дизлайке (после обработки 403 кода)
         return new ResponseEntity<>(voteService.dislikePost(voteRequest.getPostId()), HttpStatus.OK);
     }
 }

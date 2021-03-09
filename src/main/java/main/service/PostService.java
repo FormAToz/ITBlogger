@@ -15,6 +15,8 @@ import main.exception.*;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
+import main.model.enums.SortMode;
+import main.model.enums.Status;
 import main.repository.PostRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +37,7 @@ import java.util.*;
 public class PostService {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+
     @Autowired
     private PostRepository postRepository;
     @Autowired
@@ -91,23 +94,26 @@ public class PostService {
      *               best - сортировать по убыванию количества лайков
      *               early - сортировать по дате публикации, выводить сначала старые
      */
-    public PostCountResponse getAllSortedPosts(int offset, int limit, String mode) {
+    public PostCountResponse getAllSortedPosts(int offset, int limit, SortMode mode) {
         List<Post> posts = new ArrayList<>();
         Pageable pageable = PageRequest.of(offset / limit, limit);
         long count = postRepository.countAllAvailablePosts().orElse(0L);
 
         switch (mode) {
-            case "recent":     // Сортировать по дате публикации, выводить сначала новые
+            case RECENT:     // Сортировать по дате публикации, выводить сначала новые
                 pageable = PageRequest.of(offset / limit, limit, Sort.by("time").descending());
                 posts = postRepository.findAllAvailablePosts(pageable);
                 break;
-            case "popular":    // Сортировать по убыванию количества комментариев
+
+            case POPULAR:    // Сортировать по убыванию количества комментариев
                 posts = postRepository.findAvailablePostsByCommentCount(pageable);
                 break;
-            case "best":   // Сортировать по убыванию количества лайков
+
+            case BEST:   // Сортировать по убыванию количества лайков
                 posts = postRepository.findAvailablePostsByVoteValue(pageable);
                 break;
-            case "early":      // Сортировать по дате публикации, выводить сначала старые
+
+            case EARLY:      // Сортировать по дате публикации, выводить сначала старые
                 pageable = PageRequest.of(offset / limit, limit, Sort.by("time").ascending());
                 posts = postRepository.findAllAvailablePosts(pageable);
                 break;
@@ -129,9 +135,9 @@ public class PostService {
 
         textService.checkTitleAndTextLength(request.getTitle(), request.getText());
         if (settingsService.preModerationIsOn()) {
-            post.setModerationStatus(Post.ModerationStatus.NEW);
+            post.setModerationStatus(Status.NEW);
         }else {
-            post.setModerationStatus(Post.ModerationStatus.ACCEPTED);
+            post.setModerationStatus(Status.ACCEPTED);
         }
         post.setActive(request.getActive());
         post.setUser(user);
@@ -209,7 +215,7 @@ public class PostService {
         if (userService.isModerator(user)) {
             post.setModeratorId(user.getId());      // если модератор, меняем id модератора
         } else {
-            post.setModerationStatus(Post.ModerationStatus.NEW);        // иначе меняем статус
+            post.setModerationStatus(Status.NEW);        // иначе меняем статус
         }
 
         post.setTime(timeService.getExpectedTime(postRequest.getTimestamp()));
@@ -276,7 +282,7 @@ public class PostService {
      *               declined - отклонённые мной;
      *               accepted - утверждённые мной
      */
-    public PostCountResponse getPostsForModeration(int offset, int limit, String status) {
+    public PostCountResponse getPostsForModeration(int offset, int limit, Status status) {
         long count = postRepository.countAllActivePostsByStatus(status).orElse(0L);
         Pageable pageable = PageRequest.of(offset / limit, limit);
         List<Post> posts = postRepository.findAllActivePostsByStatus(status, pageable);
@@ -319,13 +325,13 @@ public class PostService {
     /**
      * Метод устанавливает новый статус посту, если статус найден. В противном случае возвращает старый статус.
      */
-    private Post.ModerationStatus getModerationStatus(Post.ModerationStatus oldStatus, String strStatus) {
+    private Status getModerationStatus(Status oldStatus, String strStatus) {
         switch (strStatus) {
             case "accept":
-                return Post.ModerationStatus.ACCEPTED;
+                return Status.ACCEPTED;
 
             case "decline":
-                return Post.ModerationStatus.DECLINED;
+                return Status.DECLINED;
 
             default:
                 return oldStatus;
@@ -344,31 +350,31 @@ public class PostService {
      *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
      *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
-    public PostCountResponse getMyPosts(int offset, int limit, String status) {
+    public PostCountResponse getMyPosts(int offset, int limit, Status status) {
         User user = userService.getLoggedUser();
         Pageable pageable = PageRequest.of(offset / limit, limit);
         List<Post> list = new ArrayList<>();
         long count = 0L;
 
         switch (status) {
-            case "inactive":
+            case INACTIVE:
                 count = postRepository.countByUserAndActive(user, unActiveValue).orElse(0L);
                 list = postRepository.findByUserAndActive(user, unActiveValue, pageable);
                 break;
 
-            case "pending":
-                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW).orElse(0L);
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.NEW, pageable);
+            case PENDING:
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Status.NEW).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Status.NEW, pageable);
                 break;
 
-            case "declined":
-                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED).orElse(0L);
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.DECLINED, pageable);
+            case DECLINED:
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Status.DECLINED).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Status.DECLINED, pageable);
                 break;
 
-            case "published":
-                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED).orElse(0L);
-                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Post.ModerationStatus.ACCEPTED, pageable);
+            case PUBLISHED:
+                count = postRepository.countByUserAndActiveAndModerationStatus(user, activeValue, Status.ACCEPTED).orElse(0L);
+                list = postRepository.findByUserAndActiveAndModerationStatus(user, activeValue, Status.ACCEPTED, pageable);
                 break;
         }
         return migrateToPostCountResponse(count, list);

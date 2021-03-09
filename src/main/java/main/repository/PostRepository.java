@@ -2,6 +2,7 @@ package main.repository;
 
 import main.model.Post;
 import main.model.User;
+import main.model.enums.Status;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -108,14 +109,14 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
     /**
      * Поиск всех нескрытых постов по статусу модерации
      */
-    @Query(ACTIVE_POSTS_FILTER + " and lower(p.moderationStatus) = lower(?1) order by p.time")
-    List<Post> findAllActivePostsByStatus(@Param("status") String status, Pageable pageable);
+    @Query(ACTIVE_POSTS_FILTER + " and p.moderationStatus = ?1 order by p.time")
+    List<Post> findAllActivePostsByStatus(@Param("status") Status status, Pageable pageable);
 
     /**
      * Количество всех активных постов по статусу модерации
      */
-    @Query("select count(*)" + ACTIVE_POSTS_FILTER + " and lower(p.moderationStatus) = lower(?1)")
-    Optional<Long> countAllActivePostsByStatus(@Param("status") String status);
+    @Query("select count(*)" + ACTIVE_POSTS_FILTER + " and p.moderationStatus = ?1")
+    Optional<Long> countAllActivePostsByStatus(@Param("status") Status status);
 
     /**
      * Метод поиска постов по id и active
@@ -130,12 +131,12 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
     /**
      * Метод поиска постов по id, active и moderation_status
      */
-    List<Post> findByUserAndActiveAndModerationStatus(User user, int active, Post.ModerationStatus moderationStatus, Pageable pageable);
+    List<Post> findByUserAndActiveAndModerationStatus(User user, int active, Status moderationStatus, Pageable pageable);
 
     /**
      * Количество постов по пользователю, активности поста и статусу модерации
      */
-    Optional<Long> countByUserAndActiveAndModerationStatus(User user, int active, Post.ModerationStatus moderationStatus);
+    Optional<Long> countByUserAndActiveAndModerationStatus(User user, int active, Status moderationStatus);
 
     /**
      * Метод группировки публикации постов по годам
