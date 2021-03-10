@@ -14,8 +14,7 @@ public class MailConfig {
     private String host;
     @Value("${spring.mail.username}")
     private String userName;
-    @Value("${spring.mail.password}")
-    private String password;
+    private String password = "17122020Dec!$";
     @Value("${spring.mail.port}")
     private int port;
     @Value("${spring.mail.protocol}")

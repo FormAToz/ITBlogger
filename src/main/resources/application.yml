@@ -1,11 +1,11 @@
 spring:
   flyway:
-    enabled: false
+    enabled: true
   jpa:
     generate-ddl: false
     show-sql: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   datasource:
     url: jdbc:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC
     username: root
@@ -19,7 +19,6 @@ spring:
     host: smtp.gmail.com
     port: 465
     username: app.autosender@gmail.com
-    password: 17122020Dec!$
 
 mail:
   debug: false   #Disable in production!
