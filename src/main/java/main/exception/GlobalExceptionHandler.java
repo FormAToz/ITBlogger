@@ -10,6 +10,7 @@ import org.apache.logging.log4j.MarkerManager;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,7 +37,8 @@ public class GlobalExceptionHandler {
             UsernameNotFoundException.class,
             InvalidParameterException.class,
             MessagingException.class,
-            IOException.class})
+            IOException.class,
+            AuthenticationException.class})
     public final ResponseEntity<ResultResponse> handleException(Exception ex, WebRequest request) {
         HttpHeaders headers = new HttpHeaders();
 
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
             return handleUsernameNotFoundException(unfe, headers, status, request);
 
         } else if (ex instanceof InvalidParameterException) {
-            HttpStatus status = HttpStatus.BAD_REQUEST;
+            HttpStatus status = HttpStatus.OK;
             InvalidParameterException ipe = (InvalidParameterException) ex;
 
             return handleInvalidParameterException(ipe, headers, status, request);
@@ -72,6 +74,11 @@ public class GlobalExceptionHandler {
 
             return handleIOException(ioex, headers, status, request);
 
+        } else if (ex instanceof AuthenticationException) {
+            HttpStatus status = HttpStatus.OK;
+            AuthenticationException authEx = (AuthenticationException) ex;
+
+            return handleAuthenticationException(authEx, headers, status, request);
         } else {
             HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
@@ -111,6 +118,13 @@ public class GlobalExceptionHandler {
      * Метод настройки ответа для IOException
      */
     private ResponseEntity<ResultResponse> handleIOException(IOException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+        return handleExceptionInternal(ex, new ErrorResultResponse(false, ex.getMessage()), headers, status, request);
+    }
+
+    /**
+     * Метод настройки ответа для AuthenticationException
+     */
+    private ResponseEntity<ResultResponse> handleAuthenticationException(AuthenticationException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
         return handleExceptionInternal(ex, new ErrorResultResponse(false, ex.getMessage()), headers, status, request);
     }
 
