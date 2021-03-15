@@ -1,13 +1,17 @@
+server:
+  port: ${PORT:8080}
+
+flyway:
+  enabled: true
+
 spring:
-  flyway:
-    enabled: true
   jpa:
     generate-ddl: false
     show-sql: false
     hibernate:
       ddl-auto: validate
   datasource:
-    url: jdbc:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC
+    url: jdbc:${CLEARDB_DATABASE_URL:mysql://localhost:3306/bloglib?useSSL=false&serverTimezone=UTC}
     username: root
     password: root
   servlet:
