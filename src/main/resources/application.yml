@@ -22,7 +22,8 @@ spring:
     protocol: smtps
     host: smtp.gmail.com
     port: 465
-    username: app.autosender@gmail.com
+    username: ${MAIL_SENDER_USERNAME}
+    password: ${MAIL_SENDER_PASSWORD}
 
 mail:
   debug: false   #Disable in production!
@@ -46,12 +47,14 @@ file:
   max-file-size: 5 #MB
   max-image-height: 36 #px
   max-image-width: 36 #px
-  upload-directory: /upload
+  upload-directory: upload
 
 #Application values
 text:
   min-title-length: 3
+  max-title-length: 100
   min-text-length: 50
+  max-text-length: 65000
   max-announce-text-length: 150
   min-comment-length: 3
   min-password-length: 6

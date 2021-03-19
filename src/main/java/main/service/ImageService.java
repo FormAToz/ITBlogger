@@ -70,7 +70,7 @@ public class ImageService {
         }
         Files.copy(image.getInputStream(), Paths.get(randomUploadPath, image.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
 
-        return new ImageResultResponse(true, randomUploadPath + image.getOriginalFilename());
+        return new ImageResultResponse(true, "\\" + randomUploadPath + image.getOriginalFilename());
     }
 
     /**
@@ -122,7 +122,7 @@ public class ImageService {
      * @return String - сгенерированное название папки
      */
     public static String generateFolder(int folderCount, int folderLength) {
-        StringBuilder path = new StringBuilder("/");
+        StringBuilder path = new StringBuilder("\\");
         Random r = new Random();
 
         for (int i = 0; i < folderCount; i++) {
@@ -132,7 +132,7 @@ public class ImageService {
                     .limit(folderLength)
                     .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                     .toString();
-            path.append(s).append("/");
+            path.append(s).append("\\");
         }
 
         return path.toString();
@@ -148,20 +148,20 @@ public class ImageService {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
-        Path scaledPath = Paths.get(uploadPath + "/scaled/" + userId);
+        Path scaledPath = Paths.get(uploadPath + "\\scaled\\" + userId);
 
         // создаем папку при ее отсутствии
         if (Files.notExists(scaledPath)) {
             new File(scaledPath.toString()).mkdirs();
         }
 
-        String destPath = scaledPath.toString() + "/" + image.getOriginalFilename();
+        String destPath = scaledPath.toString() + "\\" + image.getOriginalFilename();
         BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(image.getBytes()));
         BufferedImage scaledImage = getScaledInstance(bufferedImage, imageTargetWidth, imageTargetHeight,
                 RenderingHints.VALUE_INTERPOLATION_BILINEAR, true);
 
         writePNG(scaledImage, new FileOutputStream(destPath), 0.85f);
-        return destPath;
+        return "\\" + destPath;
     }
 
     /**

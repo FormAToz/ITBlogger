@@ -1,5 +1,7 @@
 package main.api.response.user;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Формат ответа:
  *
@@ -9,6 +11,7 @@ package main.api.response.user;
  * 	    "photo": "/avatars/ab/cd/ef/52461.jpg"
  * }
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
     protected int id;
     protected String name;
@@ -32,11 +35,23 @@ public class UserResponse {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getPhoto() {
         return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
     }
 }

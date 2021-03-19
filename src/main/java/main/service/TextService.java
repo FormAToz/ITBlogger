@@ -12,12 +12,22 @@ public class TextService {
 
     @Value("${text.min-title-length}")
     private int minTitleLength;
+
+    @Value("${text.max-title-length}")
+    private int maxTitleLength;
+
     @Value("${text.min-text-length}")
     private int minTextLength;
+
+    @Value("${text.max-text-length}")
+    private int maxTextLength;
+
     @Value("${text.max-announce-text-length}")
     private int maxAnnounceTextLength;
+
     @Value("${text.min-comment-length}")
     private int minCommentLength;
+
     @Value("${text.min-password-length}")
     private int minPasswordLength;
 
@@ -25,8 +35,17 @@ public class TextService {
         if (title.length() < minTitleLength) {
             throw new InvalidParameterException("title", "Заголовок публикации менее " + minTitleLength + " символов");
         }
+
+        if (title.length() > maxTitleLength) {
+            throw new InvalidParameterException("title", "Заголовок публикации более " + maxTitleLength + " символов");
+        }
+
         if (text.length() < minTextLength) {
             throw new InvalidParameterException("text", "Текст публикации менее " + minTextLength + " символов");
+        }
+
+        if (text.length() > maxTextLength) {
+            throw new InvalidParameterException("text", "Текст публикации более " + maxTextLength + " символов");
         }
     }
 

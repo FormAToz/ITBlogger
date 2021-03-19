@@ -90,7 +90,7 @@ public class UserService {
      */
     public User getUserByEmail(String email) {
         return userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь с E-mail: " + email + " не зарегистрирован"));
+                .orElseThrow(() -> new InvalidParameterException("email", "Пользователь с E-mail: " + email + " не зарегистрирован"));
     }
 
     /**
@@ -119,7 +119,6 @@ public class UserService {
 
     /**
      * Метод проверки, является ли пользователь модератором
-     * Модератор = 1. Не модератор = 0
      *
      * @param user - пользователь
      * @return - true или false

@@ -442,11 +442,16 @@ public class PostService {
      */
     private <T extends PostResponse>T migrateToPostResponse(T postResponse, Post post) {
         User author = post.getUser();
+        UserResponse userResponse = new UserResponse(author.getId(), author.getName());
+
+        if (postResponse instanceof PostFullResponse) {
+            userResponse.setPhoto(author.getPhoto());
+        }
 
         postResponse
                 .id(post.getId())
                 .timestamp(timeService.getTimestampFromLocalDateTime(post.getTime()))
-                .user(new UserResponse(author.getId(), author.getName(), author.getPhoto()))
+                .user(userResponse)
                 .title(post.getTitle())
                 .announce(textService.getAnnounce(post.getText()))
                 .likeCount(voteService.countLikesFromPost(post))

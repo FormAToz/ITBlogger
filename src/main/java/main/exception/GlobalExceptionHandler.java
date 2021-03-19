@@ -135,6 +135,7 @@ public class GlobalExceptionHandler {
         if (HttpStatus.INTERNAL_SERVER_ERROR.equals(status)) {
             request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
         }
+        ex.printStackTrace();
 
         return new ResponseEntity<>(body, headers, status);
     }
