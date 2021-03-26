@@ -37,6 +37,7 @@ import java.util.Random;
 public class ImageService {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final Marker MARKER = MarkerManager.getMarker("APP_INFO");
+    private static final String SEPARATOR = File.separator;
 
     @Autowired
     private HttpServletRequest request;
@@ -66,11 +67,11 @@ public class ImageService {
 
         // создаем папку (при отсутствии) и сохраняем файл
         if (Files.notExists(Paths.get(randomUploadPath))) {
-            new File(randomUploadPath.replace("\\", "/")).mkdirs();
+            new File(randomUploadPath).mkdirs();
         }
         Files.copy(image.getInputStream(), Paths.get(randomUploadPath, image.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
 
-        return new ImageResultResponse(true, "\\" + randomUploadPath + image.getOriginalFilename());
+        return new ImageResultResponse(true, "\\" + replaceFrontToBackSlash(randomUploadPath) + "\\" + image.getOriginalFilename());
     }
 
     /**
@@ -122,7 +123,7 @@ public class ImageService {
      * @return String - сгенерированное название папки
      */
     public static String generateFolder(int folderCount, int folderLength) {
-        StringBuilder path = new StringBuilder("\\");
+        StringBuilder path = new StringBuilder();
         Random r = new Random();
 
         for (int i = 0; i < folderCount; i++) {
@@ -132,7 +133,7 @@ public class ImageService {
                     .limit(folderLength)
                     .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                     .toString();
-            path.append(s).append("\\");
+            path.append(SEPARATOR).append(s);
         }
 
         return path.toString();
@@ -148,20 +149,28 @@ public class ImageService {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 
-        Path scaledPath = Paths.get(uploadPath + "\\scaled\\" + userId);
+        Path scaledPath = Paths.get(uploadPath + SEPARATOR + "scaled" + SEPARATOR + userId);
+        String destPath = scaledPath.toString() + SEPARATOR + image.getOriginalFilename();
 
         // создаем папку при ее отсутствии
         if (Files.notExists(scaledPath)) {
-            new File(scaledPath.toString().replace("\\", "/")).mkdirs();
+            new File(scaledPath.toString()).mkdirs();
         }
 
-        String destPath = scaledPath.toString() + "\\" + image.getOriginalFilename();
         BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(image.getBytes()));
         BufferedImage scaledImage = getScaledInstance(bufferedImage, imageTargetWidth, imageTargetHeight,
                 RenderingHints.VALUE_INTERPOLATION_BILINEAR, true);
-
         writePNG(scaledImage, new FileOutputStream(destPath), 0.85f);
-        return "\\" + destPath;
+        return "\\" + replaceFrontToBackSlash(destPath);
+    }
+
+    /**
+     * Метод изменения прямого слеша на обратный
+     * @param string строка с прямыми слешами
+     * @return String, строка с обратными слешами
+     */
+    private String replaceFrontToBackSlash(String string) {
+        return string.replace("/", "\\");
     }
 
     /**
