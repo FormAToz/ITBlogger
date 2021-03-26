@@ -66,7 +66,7 @@ public class ImageService {
 
         // создаем папку (при отсутствии) и сохраняем файл
         if (Files.notExists(Paths.get(randomUploadPath))) {
-            new File(randomUploadPath).mkdirs();
+            new File(randomUploadPath.replace("\\", "/")).mkdirs();
         }
         Files.copy(image.getInputStream(), Paths.get(randomUploadPath, image.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
 
@@ -152,7 +152,7 @@ public class ImageService {
 
         // создаем папку при ее отсутствии
         if (Files.notExists(scaledPath)) {
-            new File(scaledPath.toString()).mkdirs();
+            new File(scaledPath.toString().replace("\\", "/")).mkdirs();
         }
 
         String destPath = scaledPath.toString() + "\\" + image.getOriginalFilename();
