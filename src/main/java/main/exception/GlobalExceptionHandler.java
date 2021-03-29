@@ -79,6 +79,7 @@ public class GlobalExceptionHandler {
             AuthenticationException authEx = (AuthenticationException) ex;
 
             return handleAuthenticationException(authEx, headers, status, request);
+
         } else {
             HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 

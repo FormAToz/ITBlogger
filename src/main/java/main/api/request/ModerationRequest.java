@@ -1,8 +1,6 @@
 package main.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
-import main.model.enums.Status;
 
 /**\
  * Класс запроса с формы регистрации

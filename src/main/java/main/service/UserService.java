@@ -288,7 +288,7 @@ public class UserService {
         String hash = UUID.randomUUID().toString();
         String link = rootDomain + changePasswordSubAddress + hash;
         String subject = "Код активации аккаунта ITBlogger";
-        String message = "Для восстановления пароля перейдите по <a href=" + link + ">ссылке</a>";
+        String message = "Для восстановления пароля перейдите по <a href=" + link + ">ссылке</a>.<br> Это письмо сгенерированно автоматически. Пожалуйста, не отвечайте на него!";
 
         user.setCode(hash);
         userRepository.save(user);

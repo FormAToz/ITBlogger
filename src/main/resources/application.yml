@@ -20,10 +20,16 @@ spring:
       max-request-size: -1
   mail:
     protocol: smtps
-    host: smtp.gmail.com
+    host: smtp.yandex.ru
     port: 465
     username: ${MAIL_SENDER_USERNAME}
     password: ${MAIL_SENDER_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
 
 mail:
   debug: false   #Disable in production!
@@ -69,7 +75,8 @@ post:
   unactive-value: 0
   active-value: 1
 
-root-domain: http://localhost:8080
+#Mail service
+root-domain: ${ROOT_DOMAIN}
 change-password-subaddress: /login/change-password/  #part of sent to email link for restore password
 restore-password-subaddress: /login/restore-password  #part of link to password recovery page
 

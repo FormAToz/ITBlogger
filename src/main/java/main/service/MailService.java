@@ -14,6 +14,7 @@ import javax.mail.internet.MimeMessage;
  */
 @Service
 public class MailService {
+    private final String ENCODING_OPTIONS = "text/html; charset=UTF-8";
     @Value("${spring.mail.username}")
     private String userName;
 
@@ -21,7 +22,7 @@ public class MailService {
     private JavaMailSender mailSender;
 
     /**
-     * Метод отправки сообщения адресату
+     * Метод отправки сообщения адресату, используя JavaMailSender
      * @param emailTo email адрес получателя
      * @param subject тема письма
      * @param message текст письма
@@ -32,8 +33,7 @@ public class MailService {
         helper.setFrom(userName);
         helper.setTo(emailTo);
         helper.setSubject(subject);
-        mailMessage.setContent(message, "text/html;charset=\"UTF-8\"");
-
+        mailMessage.setContent(message, ENCODING_OPTIONS);
 
         mailSender.send(mailMessage);
     }

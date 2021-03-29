@@ -11,7 +11,7 @@ import main.api.response.post.PostFullResponse;
 import main.api.response.post.PostResponse;
 import main.api.response.result.ResultResponse;
 import main.api.response.user.UserResponse;
-import main.exception.*;
+import main.exception.ContentNotFoundException;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.User;
@@ -31,7 +31,10 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class PostService {
@@ -75,7 +78,7 @@ public class PostService {
      * Метод получает не скрытый пост, со статусом ACCEPTED из репозитория по id
      *
      * @param id - id поста
-     * @return  Post
+     * @return Post
      * @throws ContentNotFoundException в случае, если пост не найден
      */
     public Post getActiveAndAcceptedPostById(int id) {
@@ -86,6 +89,7 @@ public class PostService {
     /**
      * Список всех постов. Должны выводиться только активные (поле is_active в таблице posts равно 1),
      * утверждённые модератором (поле moderation_status равно ACCEPTED) посты с датой публикации не позднее текущего момента.
+     *
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
      * @param mode   - режим вывода (сортировка):
@@ -123,10 +127,10 @@ public class PostService {
 
     /**
      * Метод добавления нового поста
-     *
+     * <p>
      * Метод отправляет данные поста, которые пользователь ввёл в форму публикации. В случае, если заголовок
      * или текст поста не установлены и/или слишком короткие, метод должен выводить ошибку и не добавлять пост.
-     *
+     * <p>
      * Пост должен сохраняться со статусом модерации NEW.
      */
     public ResultResponse addPost(PostRequest request) {
@@ -136,7 +140,7 @@ public class PostService {
         textService.checkTitleAndTextLength(request.getTitle(), request.getText());
         if (settingsService.preModerationIsOn()) {
             post.setModerationStatus(Status.NEW);
-        }else {
+        } else {
             post.setModerationStatus(Status.ACCEPTED);
         }
         post.setActive(request.getActive());
@@ -156,8 +160,9 @@ public class PostService {
 
     /**
      * Метод поиска постов по запросу
-     *
+     * <p>
      * Метод возвращает посты, соответствующие поисковому запросу - строке query.
+     *
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести
      * @param query  - поисковый запрос
@@ -171,7 +176,7 @@ public class PostService {
 
     /**
      * Метод получения поста по id
-     *
+     * <p>
      * Метод выводит данные конкретного поста для отображения на странице поста, в том числе,
      * список комментариев и тэгов, привязанных к данному посту.
      *
@@ -191,20 +196,19 @@ public class PostService {
      * Метод изменяет данные поста с идентификатором ID на те, которые пользователь ввёл в форму публикации.
      * В случае, если заголовок или текст поста не установлены и/или слишком короткие (короче 3 и 50 символов соответственно),
      * метод должен выводить ошибку и не изменять пост.
-     *
+     * <p>
      * Время публикации поста также должно проверяться: в случае, если время публикации раньше текущего времени,
      * оно должно автоматически становиться текущим. Если позже текущего - необходимо устанавливать указанное значение.
-     *
+     * <p>
      * Пост должен сохраняться со статусом модерации NEW, если его изменил автор, и статус модерации не должен изменяться,
      * если его изменил модератор.
      *
-     * @param id - id поста
-     * @param postRequest:
-     *          timestamp - дата и время публикации в формате UTC
-     *          active - 1 или 0, открыть пост или скрыть
-     *          title - заголовок поста
-     *          text - текст поста в формате HTML
-     *          tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
+     * @param id           - id поста
+     * @param postRequest: timestamp - дата и время публикации в формате UTC
+     *                     active - 1 или 0, открыть пост или скрыть
+     *                     title - заголовок поста
+     *                     text - текст поста в формате HTML
+     *                     tags - тэги через запятую (при вводе на frontend тэг должен добавляться при нажатии Enter или вводе запятой).
      */
     public ResultResponse updatePost(int id, PostRequest postRequest) {
         Post post = getById(id);
@@ -230,7 +234,7 @@ public class PostService {
 
     /**
      * Метод проверки отображения поста.
-     *
+     * <p>
      * true если пост опубликован и false если скрыт (при этом модераторы и автор поста будет его видеть)
      */
     private boolean isActive(Post post) {
@@ -260,6 +264,7 @@ public class PostService {
     /**
      * Метод получения списка постов по тэгу
      * Метод выводит список постов, привязанных к тэгу, который был передан методу в качестве параметра tag.
+     *
      * @param offset  - сдвиг от 0 для постраничного вывода
      * @param limit   - количество постов, которое надо вывести (10)
      * @param tagName - тэг, по которому нужно вывести все посты
@@ -275,6 +280,7 @@ public class PostService {
      * Метод выводит все посты, которые требуют модерационных действий (которые нужно утвердить или отклонить)
      * или над которыми мною были совершены модерационные действия: которые я отклонил или утвердил
      * (это определяется полями moderation_status и moderator_id в таблице posts базы данных).
+     *
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести
      * @param status - статус модерации:
@@ -340,15 +346,16 @@ public class PostService {
 
     /**
      * Метод получения списка постов авторизированного юзера (в соответствии с полем user_id в таблице posts базы данных).
-     *
+     * <p>
      * Возможны 4 типа вывода (см. ниже описания значений параметра status).
+     *
      * @param offset - сдвиг от 0 для постраничного вывода
-     * @param limit - количество постов, которое надо вывести
+     * @param limit  - количество постов, которое надо вывести
      * @param status - статус модерации:
-     *              inactive - скрытые, ещё не опубликованы (is_active = 0);
-     *              pending - активные, ожидают утверждения модератором (is_active = 1, moderation_status = NEW);
-     *              declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
-     *              published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
+     *               inactive - скрытые, ещё не опубликованы (is_active = 0);
+     *               pending - активные, ожидают утверждения модератором (is_active = 1, moderation_status = NEW);
+     *               declined - отклонённые по итогам модерации (is_active = 1, moderation_status = DECLINED);
+     *               published - опубликованные по итогам модерации (is_active = 1, moderation_status = ACCEPTED).
      */
     public PostCountResponse getMyPosts(int offset, int limit, Status status) {
         User user = userService.getLoggedUser();
@@ -384,7 +391,7 @@ public class PostService {
      * Метод выводит количества публикаций на каждую дату переданного в параметре year года или текущего года,
      * если параметр year не задан. В параметре years всегда возвращается список всех годов,
      * за которые была хотя бы одна публикация, в порядке возврастания.
-     *
+     * <p>
      * Считаются только активные посты(поле is_active в таблице posts равно 1),
      * утверждённые модератором (поле moderation_status равно ACCEPTED),
      * с датой публикации не позднее текущего момента.
@@ -412,6 +419,7 @@ public class PostService {
     /**
      * Метод получения списка постов за указанную дату
      * Выводит посты за указанную дату, переданную в запросе в параметре date.
+     *
      * @param offset - сдвиг от 0 для постраничного вывода
      * @param limit  - количество постов, которое надо вывести (10)
      * @param date   - дата в формате "2019-10-15"
@@ -426,8 +434,9 @@ public class PostService {
 
     /**
      * Метод преобразования списка Post к списку PostCountResponse
+     *
      * @param count количество всех постов в базе данных, выбранных по определенному фильтру
-     * @param list лимитированный список объектов Post, выбранных из базы данных
+     * @param list  лимитированный список объектов Post, выбранных из базы данных
      * @return список объектов PostCountResponse
      */
     private PostCountResponse migrateToPostCountResponse(long count, List<Post> list) {
@@ -440,7 +449,7 @@ public class PostService {
     /**
      * Метод преобразования post -> postResponse
      */
-    private <T extends PostResponse>T migrateToPostResponse(T postResponse, Post post) {
+    private <T extends PostResponse> T migrateToPostResponse(T postResponse, Post post) {
         User author = post.getUser();
         UserResponse userResponse = new UserResponse(author.getId(), author.getName());
 
@@ -464,7 +473,7 @@ public class PostService {
 
     /**
      * Метод выдаёт статистику по всем постам блога.
-     *
+     * <p>
      * В случае, если публичный показ статистики блога запрещён (см. соответствующий параметр в global_settings)
      * и текущий пользователь не модератор, должна выдаваться ошибка 401.
      *
@@ -489,22 +498,22 @@ public class PostService {
      * Если параметры parent_id и/или post_id неверные (соответствующие комментарий и/или пост не существуют),
      * должна выдаваться ошибка 400 (см. раздел “Обработка ошибок”).
      * В случае, если текст комментария отсутствует (пустой) или слишком короткий, необходимо выдавать ошибку в JSON-формате.
-     *
+     * <p>
      * Пример запроса на добавление комментария к самому посту:
-     *
+     * <p>
      * {
-     *   "parent_id":"",
-     *   "post_id":21,
-     *   "text":"привет, какой интересный пост!"
+     * "parent_id":"",
+     * "post_id":21,
+     * "text":"привет, какой интересный пост!"
      * }
      * Пример запроса на добавление комментария к другому комментарию:
-     *
+     * <p>
      * {
-     *   "parent_id":31,
-     *   "post_id":21,
-     *   "text":"текст комментария"
+     * "parent_id":31,
+     * "post_id":21,
+     * "text":"текст комментария"
      * }
-     *
+     * <p>
      * parent_id - ID комментария, на который пишется ответ
      * post_id - ID поста, к которому пишется ответ
      * text - текст комментария (формат HTML)

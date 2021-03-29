@@ -110,7 +110,7 @@
             <version>${mysql.version}</version>
         </dependency>
 
-<!--    Captcha generator-->
+        <!--Captcha generator-->
         <dependency>
             <groupId>com.github.cage</groupId>
             <artifactId>cage</artifactId>
