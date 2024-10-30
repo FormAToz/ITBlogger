@@ -24,7 +24,7 @@ public class Tag {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @NotNull
     private String name;
@@ -43,7 +43,7 @@ public class Tag {
         this.name = name;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

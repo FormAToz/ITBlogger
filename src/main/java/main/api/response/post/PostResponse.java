@@ -21,7 +21,7 @@ import main.api.response.user.UserResponse;
  * 	}
  */
 public class PostResponse {
-    protected int id;
+    protected long id;
     protected long timestamp;
     protected UserResponse user;
     protected String title;
@@ -34,7 +34,7 @@ public class PostResponse {
     public PostResponse() {
     }
 
-    public PostResponse id(int id) {
+    public PostResponse id(long id) {
         this.id = id;
         return this;
     }
@@ -79,7 +79,7 @@ public class PostResponse {
         return this;
     }
 
-     public int getId() {
+     public long getId() {
         return id;
     }
 

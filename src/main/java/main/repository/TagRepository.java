@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface TagRepository extends CrudRepository<Tag, Integer> {
+public interface TagRepository extends CrudRepository<Tag, Long> {
     Optional<Tag> findByName(String name);
 }

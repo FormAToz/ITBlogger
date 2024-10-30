@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface GlobalSettingsRepository extends CrudRepository<GlobalSetting, Integer> {
+public interface GlobalSettingsRepository extends CrudRepository<GlobalSetting, Long> {
 
     Optional<GlobalSetting> findByCode(Setting code);
 

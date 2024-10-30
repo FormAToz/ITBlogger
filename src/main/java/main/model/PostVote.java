@@ -20,7 +20,7 @@ public class PostVote {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @ManyToOne
     @JoinColumn(name="user_id", updatable = false)
@@ -34,9 +34,9 @@ public class PostVote {
     private LocalDateTime time;
 
     @NotNull
-    private byte value;
+    private int value;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -68,7 +68,7 @@ public class PostVote {
         this.time = time;
     }
 
-    public byte getValue() {
+    public int getValue() {
         return value;
     }
 

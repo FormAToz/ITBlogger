@@ -24,7 +24,7 @@ public class CaptchaCode {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @NotNull
     private LocalDateTime time;
@@ -36,7 +36,7 @@ public class CaptchaCode {
     @Column(name = "secret_code", columnDefinition = "TINYTEXT")
     private String secretCode;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

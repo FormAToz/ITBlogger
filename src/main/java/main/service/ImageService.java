@@ -153,7 +153,7 @@ public class ImageService {
      * @return путь до измененного изображения
      * @throws IOException в случае ошибок чтения/записи изображения
      */
-    public String resizeAndWriteImage(int userId, MultipartFile image) throws IOException {
+    public String resizeAndWriteImage(long userId, MultipartFile image) throws IOException {
         checkFileSize(image, maxFileSize);
         checkFileExtension(image);
 

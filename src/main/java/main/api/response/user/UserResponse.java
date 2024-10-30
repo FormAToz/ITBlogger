@@ -13,25 +13,25 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
-    protected int id;
+    protected long id;
     protected String name;
     protected String photo;
 
     public UserResponse() {
     }
 
-    public UserResponse(int id, String name) {
+    public UserResponse(long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public UserResponse(int id, String name, String photo) {
+    public UserResponse(long id, String name, String photo) {
         this.id = id;
         this.name = name;
         this.photo = photo;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

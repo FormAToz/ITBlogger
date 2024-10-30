@@ -42,7 +42,7 @@ public class User {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @NotNull
     @Column(name = "is_moderator", columnDefinition = "TINYINT")
@@ -81,7 +81,7 @@ public class User {
         return isModerator == MODERATOR_VALUE ? Role.MODERATOR : Role.USER;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

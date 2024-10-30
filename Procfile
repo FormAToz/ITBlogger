@@ -1,1 +1,0 @@
-web: java -jar target/BlogSource-1.0-SNAPSHOT.jar

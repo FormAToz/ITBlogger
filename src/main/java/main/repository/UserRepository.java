@@ -7,11 +7,11 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends CrudRepository<User, Integer> {
+public interface UserRepository extends CrudRepository<User, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 
-    boolean existsByIdAndEmailIgnoreCase(int id, String email);
+    boolean existsByIdAndEmailIgnoreCase(long id, String email);
 
     Optional<User> findByEmailIgnoreCase(String email);
 

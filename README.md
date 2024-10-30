@@ -10,6 +10,3 @@
 
 ***************************
 Документация к базе данных - https://github.com/sendelufa/jd0/blob/master/DB_schema.md
-
-***************************
-Приложение доступно в реальном времени по адресу - https://it-bloggers.herokuapp.com

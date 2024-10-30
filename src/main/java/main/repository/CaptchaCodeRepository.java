@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Integer> {
+public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Long> {
 
     @Query(value = "from CaptchaCode c where c.time < ?1")
     List<CaptchaCode> findAllExpiredCodes(@Param("expTime") LocalDateTime expirationTime);

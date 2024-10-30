@@ -27,7 +27,7 @@ public class GlobalSetting {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @NotNull
     @Column(columnDefinition = "VARCHAR(32)")
@@ -46,7 +46,7 @@ public class GlobalSetting {
         this.value = value;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

@@ -22,7 +22,7 @@ public class UserFullResponse extends UserResponse {
     public UserFullResponse() {
     }
 
-    public UserFullResponse id(int id) {
+    public UserFullResponse id(long id) {
         this.id = id;
         return this;
     }

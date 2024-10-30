@@ -76,7 +76,7 @@ public class UserService {
      * @return - User
      * @throws UsernameNotFoundException - в случае, если пользователь не найден
      */
-    public User getUserById(int id) {
+    public User getUserById(long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь с id = " + id + " не найден"));
     }

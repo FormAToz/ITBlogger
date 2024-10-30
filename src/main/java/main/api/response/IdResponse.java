@@ -8,13 +8,13 @@ package main.api.response;
  * }
  */
 public class IdResponse {
-    private final int id;
+    private final long id;
 
-    public IdResponse(int id) {
+    public IdResponse(long id) {
         this.id = id;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 }

@@ -28,7 +28,7 @@ public class CommentService {
      * @return PostComment
      * @throws ContentNotFoundException в случае, если комментарий не найден
      */
-    public PostComment getCommentById(int id) {
+    public PostComment getCommentById(long id) {
         return commentRepository.findById(id)
                 .orElseThrow(() -> new ContentNotFoundException("Комментарий с id = " + id + " не найден"));
     }

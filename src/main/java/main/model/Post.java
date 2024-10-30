@@ -40,7 +40,7 @@ public class Post {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @NotNull
     @Column(name = "is_active", columnDefinition = "TINYINT")
@@ -52,7 +52,7 @@ public class Post {
     private Status moderationStatus;
 
     @Column(name = "moderator_id")
-    private Integer moderatorId;
+    private Long moderatorId;
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", updatable = false, nullable = false)
@@ -82,7 +82,7 @@ public class Post {
     @OneToMany(mappedBy = "postId", fetch = FetchType.LAZY)
     private List<PostComment> comments;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -106,11 +106,11 @@ public class Post {
         this.moderationStatus = moderationStatus;
     }
 
-    public Integer getModeratorId() {
+    public Long getModeratorId() {
         return moderatorId;
     }
 
-    public void setModeratorId(Integer moderatorId) {
+    public void setModeratorId(Long moderatorId) {
         this.moderatorId = moderatorId;
     }
 

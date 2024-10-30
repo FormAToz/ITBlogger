@@ -69,7 +69,7 @@ public class PostService {
      * @return Post
      * @throws ContentNotFoundException в случае, если пост не найден
      */
-    public Post getById(int id) {
+    public Post getById(long id) {
         return postRepository.findById(id)
                 .orElseThrow(() -> new ContentNotFoundException("Запрашиваемый пост с id = " + id + " не найден"));
     }

@@ -22,15 +22,15 @@ public class Tag2Post {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @Column(name="post_id", updatable = false, nullable = false)
-    private int postId;
+    private long postId;
 
     @Column(name="tag_id", updatable = false, nullable = false)
-    private int tagId;
+    private long tagId;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -38,7 +38,7 @@ public class Tag2Post {
         this.id = id;
     }
 
-    public int getPostId() {
+    public long getPostId() {
         return postId;
     }
 
@@ -46,7 +46,7 @@ public class Tag2Post {
         this.postId = postId;
     }
 
-    public int getTagId() {
+    public long getTagId() {
         return tagId;
     }
 

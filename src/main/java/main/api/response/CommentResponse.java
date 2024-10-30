@@ -16,19 +16,19 @@ import main.api.response.user.UserResponse;
  * }
  */
 public class CommentResponse {
-    private final int id;
+    private final long id;
     private final long timestamp;
     private final String text;
     private final UserResponse user;
 
-    public CommentResponse(int id, long timestamp, String text, UserResponse user) {
+    public CommentResponse(long id, long timestamp, String text, UserResponse user) {
         this.id = id;
         this.timestamp = timestamp;
         this.text = text;
         this.user = user;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

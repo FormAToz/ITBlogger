@@ -31,7 +31,7 @@ public class PostComment {
     @Id
     @NotNull
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @ManyToOne
     @JoinColumn(name="parent_id")
@@ -55,7 +55,7 @@ public class PostComment {
     @OneToMany(mappedBy = "parentId", fetch = FetchType.LAZY)
     private List<PostComment> comments;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

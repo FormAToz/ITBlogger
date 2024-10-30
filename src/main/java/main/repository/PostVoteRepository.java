@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface PostVoteRepository extends CrudRepository<PostVote, Integer> {
+public interface PostVoteRepository extends CrudRepository<PostVote, Long> {
 
     /**
      * Метод получения лайка/дизлайка по автору лайка/дизлайка и посту
@@ -28,7 +28,7 @@ public interface PostVoteRepository extends CrudRepository<PostVote, Integer> {
      * @param value - значение лайка/дизлайка
      * @return - кол-во лайков\дизлайков
      */
-    Optional<Long> countByValue(byte value);
+    Optional<Long> countByValue(int value);
 
     /**
      * Метод подсчета лайков/дизлайков у поста
@@ -38,7 +38,7 @@ public interface PostVoteRepository extends CrudRepository<PostVote, Integer> {
      * @return - кол-во лайков/дизлайков
      */
     @Query(value = "select count(*) from PostVote pv where pv.value = ?1 and pv.post = ?2")
-    Optional<Long> countVotesFromPost(@Param("voteValue") byte voteValue, @Param("post") Post post);
+    Optional<Long> countVotesFromPost(@Param("voteValue") int voteValue, @Param("post") Post post);
 
     /**
      * Метод подсчета всех лайков/дизлайков конкретного пользователя
@@ -47,6 +47,6 @@ public interface PostVoteRepository extends CrudRepository<PostVote, Integer> {
      * @param user - пользователь, чьи голоса нужно посчитать
      * @return - кол-во голосов
      */
-    Optional<Long> countByValueAndUser(byte value, User user);
+    Optional<Long> countByValueAndUser(int value, User user);
 }
 

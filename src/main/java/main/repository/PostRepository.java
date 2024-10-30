@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PostRepository extends JpaRepository<Post, Integer> {
+public interface PostRepository extends JpaRepository<Post, Long> {
     String AVAILABLE_POSTS_FILTER = "where p.active = 1 and p.moderationStatus = 'ACCEPTED' and p.time <= now()";
     String ACTIVE_POSTS_FILTER = "from Post p where p.active = 1";
 
@@ -73,7 +73,12 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
     /**
      * Поиск постов по значению лайка/дизлайка
      */
-    @Query(value = "from Post p left join PostVote pv on p.id = pv.post.id " + AVAILABLE_POSTS_FILTER + " and pv.value = 1 or pv.value is null group by p.id order by sum(pv.value) desc")
+    @Query(value = "select p from Post p " +
+            "left join PostVote pv on p.id = pv.post.id " +
+            AVAILABLE_POSTS_FILTER +
+            " and pv.value = 1 or pv.value is null " +
+            "group by p.id " +
+            "order by sum(pv.value) desc nulls last")
     List<Post> findAvailablePostsByVoteValue(Pageable pageable);
 
     /**
@@ -150,7 +155,7 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
      *
      * @param year - год, в котором посты были опубликованы
      */
-    @Query(value = "select date_format(p.time, '%Y-%m-%d') as date_format, count(time) " +
+    @Query(value = "select to_char(p.time, 'yyyy-mm-dd') as date_format, count(time) " +
             "from Post p " + AVAILABLE_POSTS_FILTER + " and year(p.time) = ?1 group by date_format order by date_format")
     List<Object[]> getAllAvailablePostsForYear(@Param("year") int year);
 
@@ -159,13 +164,13 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
      *
      * @param date - искомая дата
      */
-    @Query(value = "from Post p " + AVAILABLE_POSTS_FILTER + " and date_format(p.time, '%Y-%m-%d') = ?1")
+    @Query(value = "from Post p " + AVAILABLE_POSTS_FILTER + " and to_char(p.time, 'yyyy-mm-dd') = ?1")
     List<Post> findAllAvailablePostsByDate(@Param("date") String date, Pageable pageable);
 
     /**
      * Количество постов за указанную дату
      */
-    @Query(value = "select count(*) from Post p " + AVAILABLE_POSTS_FILTER + " and date_format(p.time, '%Y-%m-%d') = ?1")
+    @Query(value = "select count(*) from Post p " + AVAILABLE_POSTS_FILTER + " and to_char(p.time, 'yyyy-mm-dd') = ?1")
     Optional<Long> countAllAvailablePostsByDate(@Param("date") String date);
 
     /**
@@ -183,5 +188,5 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
      * @return - время первой публикации
      */
     @Query(nativeQuery = true, value = "SELECT time FROM posts where is_active = 1 and moderation_status = 'ACCEPTED' and user_id = :userId order by time limit 1")
-    LocalDateTime getTimeOfFirstPostByUser(@Param("userId") int id);
+    LocalDateTime getTimeOfFirstPostByUser(@Param("userId") long id);
 }
